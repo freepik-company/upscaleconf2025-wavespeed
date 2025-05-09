@@ -1,4 +1,4 @@
-.PHONY: help check-dependencies install-all install-k3d install-helm install-helmfile setup-cluster setup-all clean-cluster helm-deploy scaffold-deploy helm-destroy grafana-ui prometheus-ui
+.PHONY: help check-dependencies install-all-tools install-k3d install-helm install-helmfile setup-cluster setup-all clean-cluster helm-deploy scaffold-deploy helm-destroy grafana-ui prometheus-ui
 
 # Default target
 help:
@@ -7,7 +7,7 @@ help:
 	@echo "Available commands:"
 	@echo "  make help                  - Show this help message"
 	@echo "  make check-dependencies    - Check required dependencies"
-	@echo "  make install-all           - Install all required tools (k3d, Helm, Helmfile)"
+	@echo "  make install-all-tools           - Install all required tools (k3d, Helm, Helmfile)"
 	@echo "  make install-k3d           - Install k3d (k3s in Docker) for local development"
 	@echo "  make install-helm          - Install Helm package manager"
 	@echo "  make install-helmfile      - Install Helmfile for managing Helm releases"
@@ -32,7 +32,7 @@ check-dependencies:
 	@echo "All required dependencies checked."
 
 # Install all tools
-install-all:
+install-all-tools:
 	@echo "Installing all required tools..."
 	@$(MAKE) install-k3d
 	@$(MAKE) install-helmfile  # This also installs Helm as a dependency
