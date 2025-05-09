@@ -1,0 +1,86 @@
+# ─── GRAFANA CORE CONFIG ───────────────────────────────────────────────────────
+grafana.ini:
+  # completely turn off the built-in login form …
+  auth:
+    disable_login_form: true
+    disable_signout_menu: true     # hide the "Sign out" menu item
+
+  # …and tell Grafana to treat every visitor as an Admin of org 1
+  auth.anonymous:
+    enabled: true
+    org_role: Admin                # or Viewer/Editor if you prefer
+
+  # optional but stops basic HTTP auth from leaking through some proxies
+  auth.basic:
+    enabled: false
+
+  # optional: avoids redirects to /login when you reach Grafana via Ingress
+  server:
+    root_url: "%(protocol)s://%(domain)s/"
+# ───────────────────────────────────────────────────────────────────────────────
+
+# keep a PVC so dashboards survive pod restarts
+persistence:
+  enabled: true
+  size: 5Gi
+
+resources:
+  limits:
+    memory: 512Mi
+    cpu: 300m
+  requests:
+    memory: 256Mi
+    cpu: 100m
+
+service:
+  type: ClusterIP
+  port: 80
+
+ingress:
+  enabled: true
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+  hosts:
+    - grafana.workshop.local
+
+# leave these blank if you really don't want an admin user you can log in with
+adminUser: ""
+adminPassword: ""
+
+# Configure Prometheus data source
+datasources:
+  datasources.yaml:
+    apiVersion: 1
+    datasources:
+      - name: Prometheus
+        type: prometheus
+        url: http://prometheus-server.monitoring.svc.cluster.local
+        access: proxy
+        isDefault: true
+
+# Configure dashboard providers
+dashboardProviders:
+  dashboardproviders.yaml:
+    apiVersion: 1
+    providers:
+      - name: 'default'
+        orgId: 1
+        folder: ''
+        type: file
+        disableDeletion: false
+        editable: true
+        options:
+          path: /var/lib/grafana/dashboards/default
+
+# Import Redis dashboards
+dashboards:
+  default:
+    redis:
+      gnetId: 763
+      revision: 5
+      datasource: Prometheus
+
+# Install necessary Grafana plugins
+plugins:
+  - grafana-piechart-panel
+  - grafana-worldmap-panel
