@@ -1,0 +1,75 @@
+# Redis Helm Chart Values for WaveSpeed Workshop
+
+## Architecture configuration
+architecture: standalone  # Can be "standalone" or "replication"
+
+## Authentication parameters
+auth:
+  enabled: false  # Disabled password authentication
+  # No password required
+
+## Redis master parameters
+master:
+  # Pod resources
+  resources:
+    requests:
+      memory: 2Gi  # As requested, allocate 2Gi of memory
+      cpu: 200m
+    limits:
+      memory: 2Gi
+      cpu: 500m
+  
+  # Persistence configuration
+  persistence:
+    enabled: true
+    storageClass: ""  # Use default storage class
+    size: 2Gi
+  
+  # Pod configuration
+  podAnnotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "9121"
+  
+  # Service configuration
+  service:
+    type: ClusterIP
+    port: 6379
+    annotations: {}
+
+## Enable Redis Sentinel containers
+sentinel:
+  enabled: false  # Not using Redis Sentinel for this workshop
+
+## Enable Redis Metrics using Prometheus exporter
+metrics:
+  enabled: true
+  serviceMonitor:
+    enabled: false  # Disable ServiceMonitor as CRD is not available
+
+  # Standard metrics configuration
+  service:
+    annotations:
+      prometheus.io/scrape: "true"
+      prometheus.io/port: "9121"
+      prometheus.io/path: "/metrics"
+
+## NetworkPolicy settings
+networkPolicy:
+  enabled: true
+  allowExternal: true  # Allow external access within the cluster
+
+## Pod Security Context
+podSecurityContext:
+  enabled: true
+  fsGroup: 1001
+  runAsUser: 1001
+
+## Container Security Context
+containerSecurityContext:
+  enabled: true
+  runAsUser: 1001
+
+## Pod Disruption Budget
+pdb:
+  enabled: true
+  minAvailable: 1 
