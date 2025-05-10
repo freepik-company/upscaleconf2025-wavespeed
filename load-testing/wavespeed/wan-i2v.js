@@ -4,7 +4,7 @@ import { Trend } from 'k6/metrics';
 
 // Custom metrics for recording task execution time
 const TaskDurationTrend = new Trend('task_duration', true);
-const WAVESPEED_API_KEY = "";
+const WAVESPEED_API_KEY = __ENV.WAVESPEED_API_KEY;
 
 export const options = {
   scenarios: {
