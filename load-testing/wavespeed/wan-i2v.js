@@ -83,7 +83,7 @@ export default function () {
 
     if (status === 'completed') {
       taskSuccessful = true;
-      const duration = pollBody.data.executionTime / 1000;
+      const duration = pollBody.data.executionTime;
       TaskDurationTrend.add(duration);
       break;
     } else if (status === 'failed') {
