@@ -9,15 +9,21 @@ const WAVESPEED_API_KEY = __ENV.WAVESPEED_API_KEY;
 export const options = {
   scenarios: {
     concurrent_5: {
-      executor: 'constant-vus',
-      vus: 5, // 5 concurrent users
-      duration: '180s',
+      executor: 'constant-arrival-rate',
+      timeUnit: '1m',
+      duration: '150s',
+      preAllocatedVUs: 2,
+      rate: 5,
+      maxVUs: 5,
     },
     concurrent_10: {
-      executor: 'constant-vus',
-      vus: 10, // 10 concurrent users
-      duration: '180s',
-      startTime: '185s', // 5 seconds after 5 concurrent scenario
+      executor: 'constant-arrival-rate',
+      timeUnit: '1m',
+      duration: '150s',
+      preAllocatedVUs: 5,
+      rate: 10,
+      maxVUs: 10,
+      startTime: '155s', // 5 seconds after 5 concurrent scenario
     },
   },
 };
@@ -64,7 +70,7 @@ export default function () {
 
   // Poll task status
   const pollUrl = `https://api.wavespeed.ai/api/v2/predictions/${taskId}/result`; // Replace with actual status API
-  const maxAttempts = 120; // Maximum polling attempts
+  const maxAttempts = 150; // Maximum polling attempts
   const pollInterval = 1; // Polling interval (seconds)
   let attempts = 0;
   let taskSuccessful = false;

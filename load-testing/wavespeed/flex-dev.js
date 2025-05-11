@@ -9,14 +9,20 @@ const WAVESPEED_API_KEY = __ENV.WAVESPEED_API_KEY;
 export const options = {
   scenarios: {
     concurrent_10: {
-      executor: 'constant-vus',
-      vus: 10, // 10 concurrent users
+      executor: 'constant-arrival-rate',
+      timeUnit: '1m',
       duration: '30s',
+      preAllocatedVUs: 5,
+      rate: 10,
+      maxVUs: 10,
     },
     concurrent_30: {
-      executor: 'constant-vus',
-      vus: 30, // 30 concurrent users
+      executor: 'constant-arrival-rate',
+      timeUnit: '1m',
       duration: '30s',
+      preAllocatedVUs: 10,
+      rate: 30,
+      maxVUs: 30,
       startTime: '35s', // 5 seconds after 10 concurrent scenario
     },
   },
