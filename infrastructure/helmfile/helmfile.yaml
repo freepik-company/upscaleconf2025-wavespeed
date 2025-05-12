@@ -75,6 +75,15 @@ releases:
       category: scaffolding
     values:
       - values/grafana-values.yaml
+  
+  # Celery App with Redis and FastAPI
+  - name: celery-app
+    namespace: workshop
+    chart: ../helm/celery-app
+    labels:
+      category: application
+    values:
+      - values/celery-app-values.yaml
 
   # Placeholder for additional services
   # Uncomment and configure as needed during the workshop

@@ -1,4 +1,4 @@
-.PHONY: help check-dependencies install-all-tools install-k3d install-helm install-helmfile setup-cluster setup-all clean-cluster helm-deploy scaffold-deploy helm-destroy grafana-ui prometheus-ui
+.PHONY: help check-dependencies install-all-tools install-k3d install-helm install-helmfile setup-cluster setup-all clean-cluster helm-deploy scaffold-deploy helm-destroy grafana-ui prometheus-ui build-celery-app deploy-celery-app celery-api-ui celery-flower-ui celery-pod-logs
 
 # Default target
 help:
@@ -19,6 +19,11 @@ help:
 	@echo "  make helm-destroy          - Remove services deployed with Helmfile"
 	@echo "  make grafana-ui            - Access Grafana UI (http://localhost:3000)"
 	@echo "  make prometheus-ui         - Access Prometheus UI (http://localhost:9090)"
+	@echo "  make build-celery-app      - Build Celery app Docker image"
+	@echo "  make deploy-celery-app     - Deploy Celery app to k3d cluster"
+	@echo "  make celery-api-ui         - Access Celery API UI (port-forward to 8000)"
+	@echo "  make celery-flower-ui      - Access Celery Flower UI (port-forward to 5555)"
+	@echo "  make celery-pod-logs       - Show logs from all Celery pods"
 
 # Check dependencies
 check-dependencies:
@@ -92,6 +97,7 @@ setup-cluster: install-k3d
 	@echo "Setting up k3d cluster..."
 	@k3d cluster create workshop-cluster --agents 2 --api-port 6550 --port "8080:80@loadbalancer"
 	@kubectl create namespace workshop || true
+	@kubectl create namespace monitoring || true
 	@kubectl apply -f infrastructure/kubernetes/deployments/nginx-deployment.yaml
 	@echo "k3d cluster is set up and running."
 	@echo "You can access the cluster with: kubectl get nodes"
@@ -112,6 +118,8 @@ setup-all: setup-cluster helm-deploy
 	@echo "  Then connect to localhost:6379 (no password required)"
 	@echo "- To access Grafana: make grafana-ui"
 	@echo "- To access Prometheus: make prometheus-ui"
+	@echo "- To access Celery API: make celery-api-ui"
+	@echo "- To access Celery Flower: make celery-flower-ui"
 
 # Clean up
 clean-cluster:
@@ -172,3 +180,43 @@ prometheus-ui:
 	@echo "Port-forwarding Prometheus UI..."
 	@echo "Prometheus UI will be available at: http://localhost:9090"
 	@kubectl port-forward -n monitoring svc/prometheus-server 9090:80 
+
+# Build Celery app Docker image
+build-celery-app:
+	@echo "Building Celery app Docker image..."
+	@docker build  --platform linux/amd64 -t celery-app:latest -f app/Dockerfile app/
+	@echo "Importing image to k3d..."
+	@k3d image import celery-app:latest --cluster workshop-cluster
+	@echo "Celery app Docker image built and imported successfully."
+
+# Deploy Celery app
+deploy-celery-app: build-celery-app
+	@echo "Deploying Celery app to k3d cluster..."
+	@cd infrastructure/helmfile && helmfile apply --selector category=application
+	@echo "Celery app deployed successfully."
+	@echo "- To access Celery API: make celery-api-ui"
+	@echo "- To access Celery Flower: make celery-flower-ui"
+
+# Access Celery API UI
+celery-api-ui:
+	@echo "Port-forwarding Celery API UI..."
+	@echo "Celery API will be available at: http://localhost:8000"
+	@kubectl port-forward -n workshop svc/celery-app-api 8000:80
+
+# Access Celery Flower UI
+celery-flower-ui:
+	@echo "Port-forwarding Celery Flower UI..."
+	@echo "Celery Flower will be available at: http://localhost:5555"
+	@kubectl port-forward -n workshop svc/celery-app-flower 5555:5555
+
+# Show Celery pod logs
+celery-pod-logs:
+	@echo "Showing Celery pod logs..."
+	@echo "API pods:"
+	@kubectl get pods -n workshop -l app.kubernetes.io/name=celery-app,component=api
+	@echo "\nWorker pods:"
+	@kubectl get pods -n workshop -l app.kubernetes.io/name=celery-app,component=worker
+	@echo "\nFlower pods:"
+	@kubectl get pods -n workshop -l app.kubernetes.io/name=celery-app,component=flower
+	@echo "\nTo see logs from a specific pod, run:"
+	@echo "kubectl logs -n workshop POD_NAME" 

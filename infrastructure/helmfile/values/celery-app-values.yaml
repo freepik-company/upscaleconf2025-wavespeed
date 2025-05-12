@@ -1,0 +1,47 @@
+# Values for Celery app in helmfile
+
+# Image settings
+image:
+  repository: celery-app
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+# API configuration
+celery:
+  api:
+    enabled: true
+    replicas: 1
+    port: 8000
+    
+  worker:
+    enabled: true
+    replicas: 2
+    
+  flower:
+    enabled: true
+    replicas: 1
+    port: 5555
+    ingress:
+      enabled: true
+      className: "nginx"
+      hosts:
+        - host: flower.localhost
+          paths:
+            - path: /
+              pathType: Prefix
+
+# Ingress configuration for API
+ingress:
+  enabled: true
+  className: "nginx"
+  hosts:
+    - host: celery-api.localhost
+      paths:
+        - path: /
+          pathType: Prefix
+
+# Environment variables
+env:
+  CELERY_BROKER_URL: "redis://redis-master:6379/0"
+  CELERY_RESULT_BACKEND: "redis://redis-master:6379/0"
+  PYTHONUNBUFFERED: "1" 
