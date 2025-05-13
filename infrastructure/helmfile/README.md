@@ -44,14 +44,6 @@ make scaffold-deploy
 
 ## Usage
 
-### Setup Required Environment Variables
-
-Before running Helmfile, set the required environment variables:
-
-```bash
-export REDIS_PASSWORD="your-secure-password"
-```
-
 ### Apply the Helmfile
 
 To deploy all services:

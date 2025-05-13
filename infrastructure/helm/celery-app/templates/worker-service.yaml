@@ -1,0 +1,19 @@
+{{- if .Values.celery.worker.enabled -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "celery-app.fullname" . }}-worker
+  labels:
+    {{- include "celery-app.labels" . | nindent 4 }}
+    component: worker
+spec:
+  type: ClusterIP
+  ports:
+    - port: 9090
+      targetPort: 9090
+      protocol: TCP
+      name: metrics
+  selector:
+    {{- include "celery-app.selectorLabels" . | nindent 4 }}
+    component: worker
+{{- end }} 

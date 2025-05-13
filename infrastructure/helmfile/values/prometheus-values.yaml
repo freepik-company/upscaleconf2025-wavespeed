@@ -2,8 +2,8 @@
 
 ## Global settings
 global:
-  evaluation_interval: 1m
-  scrape_interval: 15s
+  evaluation_interval: 30s
+  scrape_interval: 10s
   scrape_timeout: 10s
 
 ## Server configuration
@@ -46,12 +46,27 @@ serviceMonitors:
         - workshop
     endpoints:
       - port: metrics
-        interval: 15s
+        interval: 10s
+        path: /metrics
+        
+  # Celery monitoring
+  - name: celery
+    enabled: true
+    selector:
+      matchLabels:
+        app.kubernetes.io/name: celery-app
+    namespaceSelector:
+      matchNames:
+        - workshop
+    endpoints:
+      - port: metrics
+        interval: 10s
         path: /metrics
 
 ## Additional scrape configs for Redis metrics
 extraScrapeConfigs: |
   - job_name: 'redis-metrics'
+    scrape_interval: 10s
     kubernetes_sd_configs:
       - role: endpoints
         namespaces:
@@ -70,6 +85,28 @@ extraScrapeConfigs: |
         target_label: service
       - source_labels: [__meta_kubernetes_pod_name]
         target_label: pod
+  
+  # Celery metrics scrape configuration
+  - job_name: 'celery-metrics'
+    scrape_interval: 10s
+    metrics_path: /metrics
+    kubernetes_sd_configs:
+      - role: endpoints
+        namespaces:
+          names:
+            - workshop
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_service_label_app_kubernetes_io_name]
+        regex: celery-app
+        action: keep
+      - source_labels: [__meta_kubernetes_namespace]
+        target_label: namespace
+      - source_labels: [__meta_kubernetes_service_name]
+        target_label: service
+      - source_labels: [__meta_kubernetes_pod_name]
+        target_label: pod
+      - source_labels: [__meta_kubernetes_pod_label_component]
+        target_label: component
 
 ## Prometheus alerting rules
 serverFiles:

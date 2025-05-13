@@ -1,0 +1,19 @@
+{{- if .Values.celery.api.enabled -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "celery-app.fullname" . }}-api
+  labels:
+    {{- include "celery-app.labels" . | nindent 4 }}
+    component: api
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: 80
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "celery-app.selectorLabels" . | nindent 4 }}
+    component: api
+{{- end }}
