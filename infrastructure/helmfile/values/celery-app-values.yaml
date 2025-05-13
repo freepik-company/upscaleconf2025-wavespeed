@@ -16,6 +16,37 @@ celery:
   worker:
     enabled: true
     replicas: 2
+    # KEDA ScaledObject configuration
+    autoscaling:
+      enabled: true
+      minReplicas: 1
+      maxReplicas: 30
+      pollingInterval: 15
+      cooldownPeriod: 180
+      advanced:
+        horizontalPodAutoscalerConfig:
+          behavior:
+            scaleDown:
+              stabilizationWindowSeconds: 300
+              policies:
+                - type: Percent
+                  value: 100
+                  periodSeconds: 15
+            scaleUp:
+              stabilizationWindowSeconds: 0
+              policies:
+                - type: Percent
+                  value: 100
+                  periodSeconds: 15
+      fallback:
+        failureThreshold: 3
+        replicas: 2
+      triggers:
+        - type: prometheus
+          metadata:
+            serverAddress: http://prometheus-server.monitoring.svc.cluster.local:80
+            threshold: "10"
+            query: sum(celery_active_process_count{queue_name="default"})
     
   flower:
     enabled: true
@@ -29,6 +60,14 @@ celery:
           paths:
             - path: /
               pathType: Prefix
+
+# API Autoscaling
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
 
 # Ingress configuration for API
 ingress:

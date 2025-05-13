@@ -16,4 +16,4 @@ Instrumentator().instrument(app).expose(app)
 
 if __name__ == "__main__":
     logger.info("Starting FastAPI server...")
-    uvicorn.run("src.api.celery_api:app", host="0.0.0.0", port=8000, log_level="info", workers=4) 
+    uvicorn.run("src.api.celery_api:app", host="0.0.0.0", port=8000, log_level="info", workers=2) 

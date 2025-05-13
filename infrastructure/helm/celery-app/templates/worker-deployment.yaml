@@ -7,7 +7,9 @@ metadata:
     {{- include "celery-app.labels" . | nindent 4 }}
     component: worker
 spec:
+  {{- if not .Values.celery.worker.autoscaling.enabled }}
   replicas: {{ .Values.celery.worker.replicas }}
+  {{- end }}
   selector:
     matchLabels:
       {{- include "celery-app.selectorLabels" . | nindent 6 }}
@@ -18,6 +20,10 @@ spec:
       annotations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9090"
+        prometheus.io/path: "/metrics"
       labels:
         {{- include "celery-app.selectorLabels" . | nindent 8 }}
         component: worker
@@ -37,6 +43,10 @@ spec:
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           command: ["python"]
           args: ["-m", "src.worker"]
+          ports:
+            - name: metrics
+              containerPort: 9090
+              protocol: TCP
           env:
             {{- range $key, $value := .Values.env }}
             - name: {{ $key }}

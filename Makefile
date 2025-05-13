@@ -99,9 +99,10 @@ install-helmfile: install-helm
 # Set up local k3d cluster
 setup-cluster: install-k3d
 	@echo "Setting up k3d cluster..."
-	@k3d cluster create workshop-cluster --agents 2 --api-port 6550 --port "8080:80@loadbalancer"
+	@k3d cluster create workshop-cluster --servers 1 --agents 3 --api-port 6550 --port "8080:80@loadbalancer" --agents-memory 6G --servers-memory 4G
 	@kubectl create namespace workshop || true
 	@kubectl create namespace monitoring || true
+	@kubectl create namespace keda || true
 	@echo "k3d cluster is set up and running."
 	@echo "You can access the cluster with: kubectl get nodes"
 	@echo ""
@@ -125,19 +126,14 @@ setup-all: setup-cluster helm-deploy
 
 # Clean up
 clean-cluster:
-	@echo "Removing Helm releases first..."
-	@if command -v helmfile > /dev/null && kubectl get nodes > /dev/null 2>&1; then \
-		cd infrastructure/helmfile && helmfile destroy || true; \
-	fi
-	@echo "Removing k3d cluster..."
-	@if command -v k3d > /dev/null; then \
-		k3d cluster delete workshop-cluster; \
-		echo "k3d cluster has been removed."; \
-	else \
-		echo "k3d not found. Cluster might not exist."; \
-	fi
-	@echo "Environment cleanup complete."
+	@echo "Cleaning up k3d cluster..."
+	@k3d cluster delete workshop-cluster || true
+	@docker kill $(docker ps -q --filter "name=k3d-workshop-cluster") 2>/dev/null || true
+	@docker rm $(docker ps -a -q --filter "name=k3d-workshop-cluster") 2>/dev/null || true
+	@echo "Cluster removed completely."
 
+recreate-cluster: clean-cluster setup-cluster
+	@echo "Cluster has been recreated with more resources."
 
 # Deploy with Helmfile
 helm-deploy: install-helmfile
@@ -161,6 +157,12 @@ scaffold-deploy: install-helmfile
 	fi
 	@cd infrastructure/helmfile && helmfile apply --selector category=scaffolding
 	@echo "Scaffolding services deployed successfully."
+	@echo "Infrastructure components deployed:"
+	@echo "- KEDA (Kubernetes Event-driven Autoscaling) for worker autoscaling"
+	@echo "- Redis for message broker and result backend"
+	@echo "- Prometheus for monitoring"
+	@echo "- Grafana for visualization"
+	@echo ""
 	@echo "To connect to Redis (no password required): kubectl port-forward service/redis-master 6379:6379 -n workshop"
 	@echo "To access Grafana: make grafana-ui (no authentication required)"
 	@echo "To access Prometheus: make prometheus-ui"
