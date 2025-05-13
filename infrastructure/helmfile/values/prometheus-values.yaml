@@ -2,8 +2,8 @@
 
 ## Global settings
 global:
-  evaluation_interval: 1m
-  scrape_interval: 15s
+  evaluation_interval: 30s
+  scrape_interval: 10s
   scrape_timeout: 10s
 
 ## Server configuration
@@ -46,12 +46,13 @@ serviceMonitors:
         - workshop
     endpoints:
       - port: metrics
-        interval: 15s
+        interval: 10s
         path: /metrics
 
 ## Additional scrape configs for Redis metrics
 extraScrapeConfigs: |
   - job_name: 'redis-metrics'
+    scrape_interval: 10s
     kubernetes_sd_configs:
       - role: endpoints
         namespaces:

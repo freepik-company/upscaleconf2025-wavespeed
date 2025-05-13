@@ -20,6 +20,10 @@ spec:
       annotations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8000"
+        prometheus.io/path: "/metrics"
       labels:
         {{- include "celery-app.selectorLabels" . | nindent 8 }}
         component: api
@@ -31,6 +35,10 @@ spec:
       serviceAccountName: {{ include "celery-app.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      volumes:
+        - name: nginx-config
+          configMap:
+            name: {{ include "celery-app.fullname" . }}-nginx-config
       containers:
         - name: {{ .Chart.Name }}-api
           securityContext:
@@ -48,20 +56,38 @@ spec:
             - name: {{ $key }}
               value: "{{ $value }}"
             {{- end }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+        - name: {{ .Chart.Name }}-nginx
+          image: "nginx:1.21-alpine"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 80
+              protocol: TCP
+          volumeMounts:
+            - name: nginx-config
+              mountPath: /etc/nginx/nginx.conf
+              subPath: nginx.conf
           livenessProbe:
             httpGet:
-              path: /docs
-              port: {{ .Values.celery.api.port }}
+              path: /health
+              port: 80
             initialDelaySeconds: 30
             periodSeconds: 10
           readinessProbe:
             httpGet:
-              path: /docs
-              port: {{ .Values.celery.api.port }}
+              path: /health
+              port: 80
             initialDelaySeconds: 5
             periodSeconds: 5
           resources:
-            {{- toYaml .Values.resources | nindent 12 }}
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

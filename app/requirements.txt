@@ -1,6 +1,7 @@
-celery>=5.2.7
+celery>=5.3.6
 redis>=4.5.1
 fastapi>=0.95.0
 uvicorn>=0.21.1
 pydantic>=1.10.7
-flower>=1.2.0 
+flower>=1.2.0
+prometheus-fastapi-instrumentator>=5.9.1 

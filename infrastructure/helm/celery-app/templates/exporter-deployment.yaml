@@ -1,0 +1,79 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "celery-app.fullname" . }}-exporter
+  labels:
+    {{- include "celery-app.labels" . | nindent 4 }}
+    component: exporter
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "celery-app.selectorLabels" . | nindent 6 }}
+      component: exporter
+  template:
+    metadata:
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9808"
+        prometheus.io/path: "/metrics"
+        prometheus.io/job: "celery-exporter"
+      labels:
+        {{- include "celery-app.selectorLabels" . | nindent 8 }}
+        component: exporter
+    spec:
+      containers:
+        - name: {{ .Chart.Name }}-exporter
+          image: "danihodovic/celery-exporter:latest"
+          imagePullPolicy: Always
+          command:
+            - "python"
+            - "/app/cli.py"
+          args:
+            - "--broker-url={{ .Values.env.CELERY_BROKER_URL }}"
+          ports:
+            - name: metrics
+              containerPort: 9808
+              protocol: TCP
+          env:
+            - name: CELERY_EXPORTER_BROKER
+              value: {{ .Values.env.CELERY_BROKER_URL }}
+            - name: CELERY_EXPORTER_ENABLE_EVENTS
+              value: "true"
+          livenessProbe:
+            httpGet:
+              path: /
+              port: metrics
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /
+              port: metrics
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          resources:
+            limits:
+              cpu: 200m
+              memory: 256Mi
+            requests:
+              cpu: 100m
+              memory: 128Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "celery-app.fullname" . }}-exporter
+  labels:
+    {{- include "celery-app.labels" . | nindent 4 }}
+    component: exporter
+spec:
+  type: ClusterIP
+  ports:
+    - port: 9808
+      targetPort: metrics
+      protocol: TCP
+      name: metrics
+  selector:
+    {{- include "celery-app.selectorLabels" . | nindent 4 }}
+    component: exporter 
