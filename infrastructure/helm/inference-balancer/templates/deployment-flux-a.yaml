@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: flux-svc-a
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "inference-balancer.labels" . | nindent 4 }}
+    app.kubernetes.io/component: flux-a
+spec:
+  replicas: {{ .Values.fluxServices.a.replicaCount }}
+  selector:
+    matchLabels:
+      app: flux-svc-a
+  template:
+    metadata:
+      labels:
+        app: flux-svc-a
+        {{- include "inference-balancer.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: flux-a
+    spec:
+      containers:
+        - name: {{ .Chart.Name }}-flux-a
+          image: "{{ .Values.fluxServices.a.image.repository }}:{{ .Values.fluxServices.a.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.fluxServices.a.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 80
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            successThreshold: 1
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+            successThreshold: 1
+            failureThreshold: 3
+          resources:
+            {{- toYaml .Values.fluxServices.a.resources | nindent 12 }}
+          volumeMounts:
+            - name: nginx-config
+              mountPath: /etc/nginx/nginx.conf
+              subPath: nginx.conf
+      volumes:
+        - name: nginx-config
+          configMap:
+            name: {{ include "inference-balancer.fullname" . }}-flux-a-config 

@@ -1,35 +1,19 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from typing import Optional, Dict, Any
-from src.tasks import add, long_running_task
+from src.tasks import flux
 
 app = FastAPI(title="Celery Task API", description="API for submitting Celery tasks")
-
-class AddTaskRequest(BaseModel):
-    x: int
-    y: int
-
-class LongRunningTaskRequest(BaseModel):
-    seconds: Optional[int] = 10
 
 class TaskResponse(BaseModel):
     task_id: str
     status: str = "pending"
 
-@app.post("/tasks/add", response_model=TaskResponse)
-async def submit_add_task(request: AddTaskRequest):
-    """Submit an addition task to Celery."""
+@app.post("/flux", response_model=TaskResponse)
+async def submit_flux_task():
+    """Submit a flux task to test the inference-balancer."""
     try:
-        task = add.delay(request.x, request.y)
-        return TaskResponse(task_id=task.id)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to submit task: {str(e)}")
-
-@app.post("/tasks/long-running", response_model=TaskResponse)
-async def submit_long_running_task(request: LongRunningTaskRequest):
-    """Submit a long running task to Celery."""
-    try:
-        task = long_running_task.delay(request.seconds)
+        task = flux.delay()
         return TaskResponse(task_id=task.id)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to submit task: {str(e)}")

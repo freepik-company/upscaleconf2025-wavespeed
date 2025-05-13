@@ -1,4 +1,4 @@
-.PHONY: help check-dependencies install-all-tools install-k3d install-helm install-helmfile setup-cluster setup-all clean-cluster helm-deploy scaffold-deploy helm-destroy grafana-ui prometheus-ui build-celery-app deploy-celery-app celery-api-ui celery-flower-ui celery-pod-logs celery-dashboards deploy-loadtest loadtest-ui health-check
+.PHONY: help check-dependencies install-all-tools install-k3d install-helm install-helmfile setup-cluster setup-all clean-cluster helm-deploy scaffold-deploy helm-destroy grafana-ui prometheus-ui build-celery-app deploy-celery-app celery-api-ui celery-flower-ui celery-pod-logs celery-dashboards deploy-loadtest loadtest-ui health-check deploy-balancer balancer-ui balancer-destroy balancer-test balancer-health-check
 
 # Default target
 help:
@@ -28,6 +28,11 @@ help:
 	@echo "  make deploy-loadtest       - Build and deploy load test for Celery app"
 	@echo "  make loadtest-ui           - Access Load Test UI (port-forward to 8089)"
 	@echo "  make health-check          - Check the health endpoint of the nginx sidecar"
+	@echo "  make deploy-balancer       - Deploy the inference-balancer Helm chart"
+	@echo "  make balancer-ui           - Access inference-balancer UI (port-forward to 8080)"
+	@echo "  make balancer-destroy      - Uninstall the inference-balancer deployment"
+	@echo "  make balancer-test         - Test the inference-balancer by accessing all services"
+	@echo "  make balancer-health-check - Check health endpoints of all balancer services"
 
 # Check dependencies
 check-dependencies:
@@ -103,6 +108,7 @@ setup-cluster: install-k3d
 	@kubectl create namespace workshop || true
 	@kubectl create namespace monitoring || true
 	@kubectl create namespace keda || true
+	@kubectl create namespace inference-balancer || true
 	@echo "k3d cluster is set up and running."
 	@echo "You can access the cluster with: kubectl get nodes"
 	@echo ""
@@ -148,7 +154,7 @@ helm-deploy: install-helmfile
 	@echo "To connect to Redis (no password required): kubectl port-forward service/redis-master 6379:6379 -n workshop"
 
 # Deploy only services labeled as scaffolding
-scaffold-deploy: install-helmfile
+scaffold-deploy: install-helmfile 
 	@echo "Deploying only scaffolding services with Helmfile..."
 	@if ! kubectl get nodes > /dev/null 2>&1; then \
 		echo "Error: Kubernetes cluster not accessible"; \
@@ -156,6 +162,7 @@ scaffold-deploy: install-helmfile
 		exit 1; \
 	fi
 	@cd infrastructure/helmfile && helmfile apply --selector category=scaffolding
+	@kubectl create namespace inference-balancer || true
 	@echo "Scaffolding services deployed successfully."
 	@echo "Infrastructure components deployed:"
 	@echo "- KEDA (Kubernetes Event-driven Autoscaling) for worker autoscaling"
@@ -255,3 +262,75 @@ loadtest-ui:
 	@echo "Port-forwarding Load Test UI..."
 	@echo "Load Test UI will be available at: http://localhost:8089"
 	@kubectl port-forward -n workshop svc/celery-loadtest 8089:8089
+
+# Deploy inference-balancer
+deploy-balancer: install-helm
+	@echo "Installing inference-balancer with Helm..."
+	@helm upgrade --install inference-balancer infrastructure/helm/inference-balancer
+		--namespace inference-balancer \
+		--wait
+	@echo "Inference-balancer deployed successfully."
+	@echo "Main load balancer service: inference-balancer-main.inference-balancer.svc.cluster.local:80"
+	@echo "Flux services:"
+	@echo "- flux-svc-a.inference-balancer.svc.cluster.local:80 (weight: 99%)"
+	@echo "- flux-svc-b.inference-balancer.svc.cluster.local:80 (weight: 1%)"
+	@echo "- flux-svc-c.inference-balancer.svc.cluster.local:80 (down)"
+
+# Access inference-balancer UI
+balancer-ui:
+	@echo "Port-forwarding to the inference-balancer main service..."
+	@echo "The balancer will be available at: http://localhost:8080/flux"
+	@kubectl port-forward -n inference-balancer svc/inference-balancer-main 8080:80
+
+# Destroy inference-balancer
+balancer-destroy:
+	@echo "Uninstalling inference-balancer Helm release..."
+	@if ! kubectl get namespace inference-balancer > /dev/null 2>&1; then \
+		echo "Inference-balancer namespace not found. Nothing to destroy."; \
+		exit 0; \
+	fi
+	@helm uninstall inference-balancer -n inference-balancer || true
+	@kubectl delete namespace inference-balancer --timeout=60s || true
+	@echo "Inference-balancer has been uninstalled."
+
+# Test inference-balancer
+balancer-test:
+	@echo "Testing inference-balancer services..."
+	@if ! kubectl get namespace inference-balancer > /dev/null 2>&1; then \
+		echo "Error: Inference-balancer namespace not found"; \
+		echo "Please deploy the balancer first with: make deploy-balancer"; \
+		exit 1; \
+	fi
+	@echo "\nChecking flux service A..."
+	@kubectl run -i --rm --restart=Never curl-test --image=curlimages/curl --namespace inference-balancer -- curl -s http://flux-svc-a:80
+	@echo "\nChecking flux service B..."
+	@kubectl run -i --rm --restart=Never curl-test --image=curlimages/curl --namespace inference-balancer -- curl -s http://flux-svc-b:80
+	@echo "\nChecking flux service C..."
+	@kubectl run -i --rm --restart=Never curl-test --image=curlimages/curl --namespace inference-balancer -- curl -s http://flux-svc-c:80
+	@echo "\nChecking main load balancer..."
+	@kubectl run -i --rm --restart=Never curl-test --image=curlimages/curl --namespace inference-balancer -- curl -s http://inference-balancer-main:80/flux
+	@echo "\nPerforming load balancer test (10 requests)..."
+	@echo "This should show ~99% traffic going to Service A and ~1% to Service B"
+	@for i in {1..10}; do \
+		kubectl run -i --rm --restart=Never curl-test-$$i --image=curlimages/curl --namespace inference-balancer -- curl -s http://inference-balancer-main:80/flux; \
+		echo; \
+	done
+	@echo "\nInference-balancer test completed."
+
+# Check health endpoints of all balancer services
+balancer-health-check:
+	@echo "Checking health endpoints of all balancer services..."
+	@if ! kubectl get namespace inference-balancer > /dev/null 2>&1; then \
+		echo "Error: Inference-balancer namespace not found"; \
+		echo "Please deploy the balancer first with: make deploy-balancer"; \
+		exit 1; \
+	fi
+	@echo "\nChecking main load balancer health..."
+	@kubectl run -i --rm --restart=Never curl-health --image=curlimages/curl --namespace inference-balancer -- curl -s http://inference-balancer-main:80/health
+	@echo "\nChecking flux service A health..."
+	@kubectl run -i --rm --restart=Never curl-health-a --image=curlimages/curl --namespace inference-balancer -- curl -s http://flux-svc-a:80/health
+	@echo "\nChecking flux service B health..."
+	@kubectl run -i --rm --restart=Never curl-health-b --image=curlimages/curl --namespace inference-balancer -- curl -s http://flux-svc-b:80/health
+	@echo "\nChecking flux service C health..."
+	@kubectl run -i --rm --restart=Never curl-health-c --image=curlimages/curl --namespace inference-balancer -- curl -s http://flux-svc-c:80/health
+	@echo "\nAll health checks completed."

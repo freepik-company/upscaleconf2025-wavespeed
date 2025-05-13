@@ -1,0 +1,79 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "inference-balancer.fullname" . }}-main-config
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "inference-balancer.labels" . | nindent 4 }}
+    app.kubernetes.io/component: main-loadbalancer
+data:
+  nginx.conf: |
+    user nginx;
+    worker_processes auto;
+    error_log /var/log/nginx/error.log warn;
+    pid /var/run/nginx.pid;
+
+    events {
+        worker_connections 1024;
+    }
+
+    http {
+        include /etc/nginx/mime.types;
+        default_type application/octet-stream;
+
+        log_format main '$remote_addr - $remote_user [$time_local] "$request" '
+                         '$status $body_bytes_sent "$http_referer" '
+                         '"$http_user_agent" "$http_x_forwarded_for"';
+
+        access_log /var/log/nginx/access.log main;
+
+        sendfile on;
+        keepalive_timeout 65;
+
+        upstream flux-production {
+            server flux-svc-a.{{ .Values.namespace }}.svc.cluster.local:{{ .Values.fluxServices.a.service.port }} weight={{ .Values.fluxServices.a.weight }} max_conns={{ .Values.fluxServices.a.maxConns }} max_fails={{ .Values.fluxServices.a.maxFails }} fail_timeout={{ .Values.fluxServices.a.failTimeout }};
+            server flux-svc-b.{{ .Values.namespace }}.svc.cluster.local:{{ .Values.fluxServices.b.service.port }} weight={{ .Values.fluxServices.b.weight }} max_conns={{ .Values.fluxServices.b.maxConns }} max_fails={{ .Values.fluxServices.b.maxFails }} fail_timeout={{ .Values.fluxServices.b.failTimeout }};
+            server flux-svc-c.{{ .Values.namespace }}.svc.cluster.local:{{ .Values.fluxServices.c.service.port }} weight={{ .Values.fluxServices.c.weight }} max_conns={{ .Values.fluxServices.c.maxConns }} max_fails={{ .Values.fluxServices.c.maxFails }} fail_timeout={{ .Values.fluxServices.c.failTimeout }}{{ if .Values.fluxServices.c.down }} down{{ end }};
+        }
+
+        server {
+            listen 80;
+            server_name _;
+            
+            location = /flux {
+                proxy_set_header Host                   $host;
+
+                # Pass Real IP
+                proxy_set_header X-Real-IP              $remote_addr;
+
+                proxy_set_header X-Forwarded-For        $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Host       $host;
+                proxy_set_header X-Forwarded-Port       $server_port;
+                if ($custom_request_id = "") {
+                    set $custom_request_id $request_id;
+                }
+                proxy_set_header X-Request-Id           $custom_request_id;
+
+                # mitigate HTTPoxy Vulnerability
+                proxy_set_header Proxy                  "";
+
+                proxy_connect_timeout                   10m;
+                proxy_send_timeout                      10m;
+                proxy_read_timeout                      10m;
+
+                proxy_redirect                          off;
+                proxy_buffering                         off;
+
+                proxy_http_version                      1.1;
+
+                proxy_pass http://flux-production;
+            }
+            
+            # Health check endpoint
+            location = /health {
+                access_log off;
+                add_header Content-Type text/plain;
+                return 200 "OK\n";
+            }
+        }
+    } 

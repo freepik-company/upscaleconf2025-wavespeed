@@ -20,27 +20,12 @@ class CeleryTaskUser(HttpUser):
         if response.status_code != 200:
             print(f"Health check failed with status: {response.status_code}")
     
-    @task(8)
-    def add_task(self):
-        """Submit a simple addition task - higher weight for more frequency"""
-        x = random.randint(1, 100)
-        y = random.randint(1, 100)
-        
-        payload = {"x": x, "y": y}
-        response = self.client.post("/tasks/add", json=payload)
-        
-        if response.status_code == 200:
-            # Optionally check the task status after a delay
-            time.sleep(0.5)  # Give the task time to process
-    
-    @task(2)
-    def long_running_task(self):
-        """Submit a long running task - lower weight for less frequency"""
-        seconds = random.randint(2, 5)  # Keep it short for load testing
-        
-        payload = {"seconds": seconds}
-        response = self.client.post("/tasks/long-running", json=payload)
+    @task(10)
+    def flux_task(self):
+        """Submit a flux task to test the inference-balancer"""
+        response = self.client.post("/flux", json={})
         
         if response.status_code == 200:
             task_id = response.json().get("task_id")
-            # We don't wait for the long task to complete, just fire and forget 
+            if task_id:
+                self.client.get(f"/tasks/{task_id}") 
