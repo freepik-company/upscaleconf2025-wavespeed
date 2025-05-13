@@ -1,0 +1,307 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "inference-balancer.fullname" . }}-main-exporter
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "inference-balancer.labels" . | nindent 4 }}
+    app.kubernetes.io/component: main-metrics-exporter
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "inference-balancer.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: main-metrics-exporter
+  template:
+    metadata:
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9113"
+        prometheus.io/path: "/metrics"
+      labels:
+        {{- include "inference-balancer.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: main-metrics-exporter
+    spec:
+      containers:
+        - name: nginx-prometheus-exporter
+          image: "nginx/nginx-prometheus-exporter:0.11.0"
+          imagePullPolicy: IfNotPresent
+          args:
+            - -nginx.scrape-uri=http://{{ include "inference-balancer.fullname" . }}-main.{{ .Values.namespace }}.svc.cluster.local:80/metrics
+            - -web.telemetry-path=/metrics
+            - -web.listen-address=:9113
+          ports:
+            - name: metrics
+              containerPort: 9113
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /metrics
+              port: metrics
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /metrics
+              port: metrics
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            limits:
+              cpu: 200m
+              memory: 128Mi
+            requests:
+              cpu: 100m
+              memory: 64Mi
+---
+{{- if .Values.fluxServices.a.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "inference-balancer.fullname" . }}-flux-a-exporter
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "inference-balancer.labels" . | nindent 4 }}
+    app.kubernetes.io/component: flux-a-metrics-exporter
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "inference-balancer.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: flux-a-metrics-exporter
+  template:
+    metadata:
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9113"
+        prometheus.io/path: "/metrics"
+      labels:
+        {{- include "inference-balancer.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: flux-a-metrics-exporter
+    spec:
+      containers:
+        - name: nginx-prometheus-exporter
+          image: "nginx/nginx-prometheus-exporter:0.11.0"
+          imagePullPolicy: IfNotPresent
+          args:
+            - -nginx.scrape-uri=http://flux-svc-a.{{ .Values.namespace }}.svc.cluster.local:80/metrics
+            - -web.telemetry-path=/metrics
+            - -web.listen-address=:9113
+          ports:
+            - name: metrics
+              containerPort: 9113
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /metrics
+              port: metrics
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /metrics
+              port: metrics
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            limits:
+              cpu: 200m
+              memory: 128Mi
+            requests:
+              cpu: 100m
+              memory: 64Mi
+---
+{{- end }}
+{{- if .Values.fluxServices.b.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "inference-balancer.fullname" . }}-flux-b-exporter
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "inference-balancer.labels" . | nindent 4 }}
+    app.kubernetes.io/component: flux-b-metrics-exporter
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "inference-balancer.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: flux-b-metrics-exporter
+  template:
+    metadata:
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9113"
+        prometheus.io/path: "/metrics"
+      labels:
+        {{- include "inference-balancer.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: flux-b-metrics-exporter
+    spec:
+      containers:
+        - name: nginx-prometheus-exporter
+          image: "nginx/nginx-prometheus-exporter:0.11.0"
+          imagePullPolicy: IfNotPresent
+          args:
+            - -nginx.scrape-uri=http://flux-svc-b.{{ .Values.namespace }}.svc.cluster.local:80/metrics
+            - -web.telemetry-path=/metrics
+            - -web.listen-address=:9113
+          ports:
+            - name: metrics
+              containerPort: 9113
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /metrics
+              port: metrics
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /metrics
+              port: metrics
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            limits:
+              cpu: 200m
+              memory: 128Mi
+            requests:
+              cpu: 100m
+              memory: 64Mi
+---
+{{- end }}
+{{- if and .Values.fluxServices.c.enabled (not .Values.fluxServices.c.down) }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "inference-balancer.fullname" . }}-flux-c-exporter
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "inference-balancer.labels" . | nindent 4 }}
+    app.kubernetes.io/component: flux-c-metrics-exporter
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "inference-balancer.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: flux-c-metrics-exporter
+  template:
+    metadata:
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9113"
+        prometheus.io/path: "/metrics"
+      labels:
+        {{- include "inference-balancer.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: flux-c-metrics-exporter
+    spec:
+      containers:
+        - name: nginx-prometheus-exporter
+          image: "nginx/nginx-prometheus-exporter:0.11.0"
+          imagePullPolicy: IfNotPresent
+          args:
+            - -nginx.scrape-uri=http://flux-svc-c.{{ .Values.namespace }}.svc.cluster.local:80/metrics
+            - -web.telemetry-path=/metrics
+            - -web.listen-address=:9113
+          ports:
+            - name: metrics
+              containerPort: 9113
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /metrics
+              port: metrics
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /metrics
+              port: metrics
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            limits:
+              cpu: 200m
+              memory: 128Mi
+            requests:
+              cpu: 100m
+              memory: 64Mi
+---
+{{- end }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "inference-balancer.fullname" . }}-main-exporter
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "inference-balancer.labels" . | nindent 4 }}
+    app.kubernetes.io/component: main-metrics-exporter
+spec:
+  ports:
+    - name: metrics
+      port: 9113
+      targetPort: metrics
+      protocol: TCP
+  selector:
+    {{- include "inference-balancer.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: main-metrics-exporter
+---
+{{- if .Values.fluxServices.a.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "inference-balancer.fullname" . }}-flux-a-exporter
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "inference-balancer.labels" . | nindent 4 }}
+    app.kubernetes.io/component: flux-a-metrics-exporter
+spec:
+  ports:
+    - name: metrics
+      port: 9113
+      targetPort: metrics
+      protocol: TCP
+  selector:
+    {{- include "inference-balancer.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: flux-a-metrics-exporter
+{{- end }}
+---
+{{- if .Values.fluxServices.b.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "inference-balancer.fullname" . }}-flux-b-exporter
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "inference-balancer.labels" . | nindent 4 }}
+    app.kubernetes.io/component: flux-b-metrics-exporter
+spec:
+  ports:
+    - name: metrics
+      port: 9113
+      targetPort: metrics
+      protocol: TCP
+  selector:
+    {{- include "inference-balancer.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: flux-b-metrics-exporter
+{{- end }}
+---
+{{- if and .Values.fluxServices.c.enabled (not .Values.fluxServices.c.down) }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "inference-balancer.fullname" . }}-flux-c-exporter
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "inference-balancer.labels" . | nindent 4 }}
+    app.kubernetes.io/component: flux-c-metrics-exporter
+spec:
+  ports:
+    - name: metrics
+      port: 9113
+      targetPort: metrics
+      protocol: TCP
+  selector:
+    {{- include "inference-balancer.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: flux-c-metrics-exporter
+{{- end }} 

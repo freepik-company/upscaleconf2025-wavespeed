@@ -266,9 +266,7 @@ loadtest-ui:
 # Deploy inference-balancer
 deploy-balancer: install-helm
 	@echo "Installing inference-balancer with Helm..."
-	@helm upgrade --install inference-balancer infrastructure/helm/inference-balancer
-		--namespace inference-balancer \
-		--wait
+	@helm upgrade --install inference-balancer infrastructure/helm/inference-balancer -n inference-balancer --wait
 	@echo "Inference-balancer deployed successfully."
 	@echo "Main load balancer service: inference-balancer-main.inference-balancer.svc.cluster.local:80"
 	@echo "Flux services:"
@@ -276,46 +274,6 @@ deploy-balancer: install-helm
 	@echo "- flux-svc-b.inference-balancer.svc.cluster.local:80 (weight: 1%)"
 	@echo "- flux-svc-c.inference-balancer.svc.cluster.local:80 (down)"
 
-# Access inference-balancer UI
-balancer-ui:
-	@echo "Port-forwarding to the inference-balancer main service..."
-	@echo "The balancer will be available at: http://localhost:8080/flux"
-	@kubectl port-forward -n inference-balancer svc/inference-balancer-main 8080:80
-
-# Destroy inference-balancer
-balancer-destroy:
-	@echo "Uninstalling inference-balancer Helm release..."
-	@if ! kubectl get namespace inference-balancer > /dev/null 2>&1; then \
-		echo "Inference-balancer namespace not found. Nothing to destroy."; \
-		exit 0; \
-	fi
-	@helm uninstall inference-balancer -n inference-balancer || true
-	@kubectl delete namespace inference-balancer --timeout=60s || true
-	@echo "Inference-balancer has been uninstalled."
-
-# Test inference-balancer
-balancer-test:
-	@echo "Testing inference-balancer services..."
-	@if ! kubectl get namespace inference-balancer > /dev/null 2>&1; then \
-		echo "Error: Inference-balancer namespace not found"; \
-		echo "Please deploy the balancer first with: make deploy-balancer"; \
-		exit 1; \
-	fi
-	@echo "\nChecking flux service A..."
-	@kubectl run -i --rm --restart=Never curl-test --image=curlimages/curl --namespace inference-balancer -- curl -s http://flux-svc-a:80
-	@echo "\nChecking flux service B..."
-	@kubectl run -i --rm --restart=Never curl-test --image=curlimages/curl --namespace inference-balancer -- curl -s http://flux-svc-b:80
-	@echo "\nChecking flux service C..."
-	@kubectl run -i --rm --restart=Never curl-test --image=curlimages/curl --namespace inference-balancer -- curl -s http://flux-svc-c:80
-	@echo "\nChecking main load balancer..."
-	@kubectl run -i --rm --restart=Never curl-test --image=curlimages/curl --namespace inference-balancer -- curl -s http://inference-balancer-main:80/flux
-	@echo "\nPerforming load balancer test (10 requests)..."
-	@echo "This should show ~99% traffic going to Service A and ~1% to Service B"
-	@for i in {1..10}; do \
-		kubectl run -i --rm --restart=Never curl-test-$$i --image=curlimages/curl --namespace inference-balancer -- curl -s http://inference-balancer-main:80/flux; \
-		echo; \
-	done
-	@echo "\nInference-balancer test completed."
 
 # Check health endpoints of all balancer services
 balancer-health-check:
@@ -334,3 +292,19 @@ balancer-health-check:
 	@echo "\nChecking flux service C health..."
 	@kubectl run -i --rm --restart=Never curl-health-c --image=curlimages/curl --namespace inference-balancer -- curl -s http://flux-svc-c:80/health
 	@echo "\nAll health checks completed."
+
+
+deploy-workshop-app: scaffold-deploy deploy-celery-app deploy-balancer
+	@echo "All workshop app dependencies have been deployed successfully."
+	@echo "To launch traffic to the application, use: make deploy-loadtest"
+	@echo "To view metrics in Grafana, use: make grafana-ui"
+	@echo "Starting workshop app..."
+
+clean-workshop-app:
+	@echo "Cleaning up workshop app..."
+	@kubectl delete namespace workshop || true
+	@kubectl delete namespace inference-balancer || true
+	@kubectl delete namespace monitoring || true
+	@echo "Workshop app cleaned up successfully."
+
+

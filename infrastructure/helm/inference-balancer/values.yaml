@@ -93,6 +93,10 @@ fluxServices:
         cpu: 200m
         memory: 256Mi
 
+# ServiceMonitor for Prometheus integration
+serviceMonitor:
+  enabled: false
+
 # This will set the replicaset count more information can be found here: https://kubernetes.io/docs/concepts/workloads/controllers/replicaset/
 replicaCount: 1
 
@@ -183,7 +187,7 @@ readinessProbe:
     path: /
     port: http
 
-# This section is for setting up autoscaling more information can be found here: https://kubernetes.io/docs/concepts/workloads/autoscaling/
+# This section is for setting up autoscaling more information can be found here: https://kubernetes.io/docs/concepts/workloads/controllers/horizontal-pod-autoscaler/
 autoscaling:
   enabled: true
   minReplicas: 1

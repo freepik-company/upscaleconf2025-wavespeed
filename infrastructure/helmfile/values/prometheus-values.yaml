@@ -107,6 +107,37 @@ extraScrapeConfigs: |
         target_label: pod
       - source_labels: [__meta_kubernetes_pod_label_component]
         target_label: component
+        
+  # Inference Balancer NGINX metrics
+  - job_name: 'nginx-balancer-metrics'
+    scrape_interval: 10s
+    metrics_path: /metrics
+    kubernetes_sd_configs:
+      - role: pod
+        namespaces:
+          names:
+            - inference-balancer
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+        regex: true
+        action: keep
+      - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+        regex: (.+)
+        target_label: __metrics_path__
+        action: replace
+      - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+        regex: ([^:]+)(?::\d+)?;(\d+)
+        target_label: __address__
+        replacement: $1:$2
+        action: replace
+      - source_labels: [__meta_kubernetes_namespace]
+        target_label: namespace
+      - source_labels: [__meta_kubernetes_pod_name]
+        target_label: pod
+      - source_labels: [__meta_kubernetes_pod_label_app_kubernetes_io_component]
+        target_label: component
+      - source_labels: [__meta_kubernetes_pod_label_app_kubernetes_io_instance]
+        target_label: instance
 
 ## Prometheus alerting rules
 serverFiles:
@@ -129,4 +160,23 @@ serverFiles:
               severity: warning
             annotations:
               summary: "Redis high memory usage"
-              description: "Redis instance {{ $labels.instance }} memory usage is over 80%" 
+              description: "Redis instance {{ $labels.instance }} memory usage is over 80%"
+      
+      - name: nginx-alerts
+        rules:
+          - alert: NginxDown
+            expr: nginx_up == 0
+            for: 1m
+            labels:
+              severity: critical
+            annotations:
+              summary: "NGINX instance is down"
+              description: "NGINX instance {{ $labels.instance }} is down"
+          - alert: NginxHighConnections
+            expr: nginx_connections_active > 500
+            for: 1m
+            labels:
+              severity: warning
+            annotations:
+              summary: "NGINX high connection count"
+              description: "NGINX instance {{ $labels.instance }} has high active connections ({{ $value }})" 

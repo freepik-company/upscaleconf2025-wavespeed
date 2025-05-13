@@ -24,16 +24,44 @@ data:
         log_format main '$remote_addr - $remote_user [$time_local] "$request" '
                          '$status $body_bytes_sent "$http_referer" '
                          '"$http_user_agent" "$http_x_forwarded_for"';
+                         
+        # Create map variables to translate upstream addresses to service names using DNS
+        map $upstream_addr $upstream_service_name {
+            "~flux-svc-a" "a";
+            "~flux-svc-b" "b";
+            "~flux-svc-c" "c";
+            default "";
+        }
+        
+        log_format json_metrics escape=json
+                         '{'
+                         '"timestamp":"$time_iso8601",'
+                         '"remote_addr":"$remote_addr",'
+                         '"request":"$request",'
+                         '"status":$status,'
+                         '"bytes_sent":$body_bytes_sent,'
+                         '"upstream_service":"$upstream_service_name",'
+                         '"request_time":$request_time,'
+                         '"upstream_connect_time":"$upstream_connect_time",'
+                         '"upstream_header_time":"$upstream_header_time",'
+                         '"upstream_response_time":"$upstream_response_time",'
+                         '"upstream_addr":"$upstream_addr",'
+                         '"upstream_status":"$upstream_status"'
+                         '}';
 
-        access_log /var/log/nginx/access.log main;
+        access_log /var/log/nginx/access.log json_metrics;
 
         sendfile on;
         keepalive_timeout 65;
 
         upstream flux-production {
+            # Add service identifier for metrics tracking
             server flux-svc-a.{{ .Values.namespace }}.svc.cluster.local:{{ .Values.fluxServices.a.service.port }} weight={{ .Values.fluxServices.a.weight }} max_conns={{ .Values.fluxServices.a.maxConns }} max_fails={{ .Values.fluxServices.a.maxFails }} fail_timeout={{ .Values.fluxServices.a.failTimeout }};
             server flux-svc-b.{{ .Values.namespace }}.svc.cluster.local:{{ .Values.fluxServices.b.service.port }} weight={{ .Values.fluxServices.b.weight }} max_conns={{ .Values.fluxServices.b.maxConns }} max_fails={{ .Values.fluxServices.b.maxFails }} fail_timeout={{ .Values.fluxServices.b.failTimeout }};
             server flux-svc-c.{{ .Values.namespace }}.svc.cluster.local:{{ .Values.fluxServices.c.service.port }} weight={{ .Values.fluxServices.c.weight }} max_conns={{ .Values.fluxServices.c.maxConns }} max_fails={{ .Values.fluxServices.c.maxFails }} fail_timeout={{ .Values.fluxServices.c.failTimeout }}{{ if .Values.fluxServices.c.down }} down{{ end }};
+            
+            # Enable zone for tracking per upstream metrics
+            zone flux_backend 64k;
         }
 
         server {
@@ -57,6 +85,11 @@ data:
                 # mitigate HTTPoxy Vulnerability
                 proxy_set_header Proxy                  "";
 
+                # Add response headers with timing information for debugging and monitoring
+                add_header X-Upstream-Service $upstream_service_name;
+                add_header X-Upstream-Response-Time $upstream_response_time;
+                add_header X-Request-Time $request_time;
+
                 proxy_connect_timeout                   10m;
                 proxy_send_timeout                      10m;
                 proxy_read_timeout                      10m;
@@ -67,6 +100,17 @@ data:
                 proxy_http_version                      1.1;
 
                 proxy_pass http://flux-production;
+            }
+            
+            # Metrics endpoint for Prometheus
+            location = /metrics {
+                stub_status on;
+                access_log off;
+                allow 127.0.0.1;
+                allow 10.0.0.0/8;  # Kubernetes cluster internal network
+                allow 172.16.0.0/12;  # Additional Kubernetes CIDR range
+                allow 192.168.0.0/16; # Additional Kubernetes CIDR range
+                deny all;
             }
             
             # Health check endpoint

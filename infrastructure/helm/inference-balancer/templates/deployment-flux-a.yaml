@@ -7,14 +7,20 @@ metadata:
     {{- include "inference-balancer.labels" . | nindent 4 }}
     app.kubernetes.io/component: flux-a
 spec:
+  {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.fluxServices.a.replicaCount }}
+  {{- end }}
   selector:
     matchLabels:
-      app: flux-svc-a
+      {{- include "inference-balancer.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: flux-a
   template:
     metadata:
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "80"
+        prometheus.io/path: "/metrics"
       labels:
-        app: flux-svc-a
         {{- include "inference-balancer.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/component: flux-a
     spec:

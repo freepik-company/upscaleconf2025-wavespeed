@@ -6,6 +6,10 @@ metadata:
   labels:
     {{- include "inference-balancer.labels" . | nindent 4 }}
     app.kubernetes.io/component: main-loadbalancer
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "9090"
+    prometheus.io/path: "/metrics"
 spec:
   type: {{ .Values.mainLoadBalancer.service.type }}
   ports:
@@ -13,6 +17,10 @@ spec:
       targetPort: http
       protocol: TCP
       name: http
+    - port: 9090
+      targetPort: log-metrics
+      protocol: TCP
+      name: log-metrics
   selector:
     {{- include "inference-balancer.selectorLabels" . | nindent 4 }}
     app.kubernetes.io/component: main-loadbalancer 
