@@ -93,8 +93,8 @@ dashboards:
               {
                 "builtIn": 1,
                 "datasource": {
-                  "type": "grafana",
-                  "uid": "-- Grafana --"
+                  "type": "datasource",
+                  "uid": "grafana"
                 },
                 "enable": true,
                 "hide": true,
@@ -110,52 +110,216 @@ dashboards:
               }
             ]
           },
-          "description": "A dashboard that monitors Celery using metrics from Kubernetes pods",
+          "description": "Basic celery monitoring dashboard",
           "editable": true,
           "fiscalYearStartMonth": 0,
-          "graphTooltip": 0,
+          "graphTooltip": 1,
           "id": 10,
           "links": [],
-          "liveNow": false,
+          "liveNow": true,
           "panels": [
             {
-              "collapsed": false,
               "datasource": {
                 "type": "prometheus",
-                "uid": "PBFA97CFB590B2093"
+                "uid": "Prometheus"
+              },
+              "description": "This panel shows status of celery workers. 1 = online, 0 = offline.",
+              "fieldConfig": {
+                "defaults": {
+                  "color": {
+                    "mode": "thresholds"
+                  },
+                  "fieldMinMax": true,
+                  "mappings": [],
+                  "max": 20,
+                  "min": 0,
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "color": "dark-red",
+                        "value": null
+                      },
+                      {
+                        "color": "#EF843C",
+                        "value": 1
+                      },
+                      {
+                        "color": "green",
+                        "value": 2
+                      }
+                    ]
+                  },
+                  "unit": "short"
+                },
+                "overrides": []
               },
               "gridPos": {
-                "h": 1,
-                "w": 24,
+                "h": 7,
+                "w": 12,
                 "x": 0,
                 "y": 0
               },
-              "id": 2,
-              "panels": [],
-              "showTitle": true,
-              "title": "Summary",
-              "titleSize": "h6",
-              "type": "row"
+              "id": 4,
+              "options": {
+                "minVizHeight": 75,
+                "minVizWidth": 75,
+                "orientation": "auto",
+                "reduceOptions": {
+                  "calcs": [
+                    "lastNotNull"
+                  ],
+                  "fields": "",
+                  "values": false
+                },
+                "showThresholdLabels": false,
+                "showThresholdMarkers": true,
+                "sizing": "auto"
+              },
+              "pluginVersion": "9.3.6",
+              "targets": [
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "Prometheus"
+                  },
+                  "disableTextWrap": false,
+                  "editorMode": "code",
+                  "exemplar": true,
+                  "expr": "count(celery_worker_up{job=\"kubernetes-pods\", namespace=\"workshop\"} == 1)",
+                  "fullMetaSearch": false,
+                  "hide": false,
+                  "includeNullMetadata": true,
+                  "interval": "",
+                  "legendFormat": "Workers",
+                  "range": true,
+                  "refId": "C",
+                  "useBackend": false
+                }
+              ],
+              "title": "Celery Worker Count",
+              "type": "gauge"
             },
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "PBFA97CFB590B2093"
+                "uid": "Prometheus"
               },
+              "description": "This panel shows status of celery workers over time.",
               "fieldConfig": {
                 "defaults": {
-                  "links": [],
+                  "color": {
+                    "mode": "palette-classic"
+                  },
+                  "custom": {
+                    "axisBorderShow": false,
+                    "axisCenteredZero": false,
+                    "axisColorMode": "text",
+                    "axisLabel": "",
+                    "axisPlacement": "auto",
+                    "barAlignment": 0,
+                    "drawStyle": "line",
+                    "fillOpacity": 10,
+                    "gradientMode": "none",
+                    "hideFrom": {
+                      "legend": false,
+                      "tooltip": false,
+                      "viz": false
+                    },
+                    "insertNulls": false,
+                    "lineInterpolation": "linear",
+                    "lineStyle": {
+                      "fill": "solid"
+                    },
+                    "lineWidth": 1,
+                    "pointSize": 5,
+                    "scaleDistribution": {
+                      "type": "linear"
+                    },
+                    "showPoints": "never",
+                    "spanNulls": true,
+                    "stacking": {
+                      "group": "A",
+                      "mode": "none"
+                    },
+                    "thresholdsStyle": {
+                      "mode": "line"
+                    }
+                  },
                   "mappings": [],
                   "thresholds": {
                     "mode": "absolute",
                     "steps": [
                       {
-                        "color": "red",
+                        "color": "green",
+                        "value": null
+                      }
+                    ]
+                  }
+                },
+                "overrides": []
+              },
+              "gridPos": {
+                "h": 7,
+                "w": 12,
+                "x": 12,
+                "y": 0
+              },
+              "id": 15,
+              "options": {
+                "legend": {
+                  "calcs": [],
+                  "displayMode": "list",
+                  "placement": "right",
+                  "showLegend": true
+                },
+                "tooltip": {
+                  "mode": "multi",
+                  "sort": "asc"
+                }
+              },
+              "pluginVersion": "9.3.6",
+              "targets": [
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "Prometheus"
+                  },
+                  "editorMode": "code",
+                  "expr": "sum(celery_worker_up{job=\"kubernetes-pods\", namespace=\"workshop\"})",
+                  "hide": false,
+                  "instant": false,
+                  "legendFormat": "Online Workers",
+                  "range": true,
+                  "refId": "A"
+                }
+              ],
+              "title": "Celery Worker Time Series",
+              "type": "timeseries"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "Prometheus"
+              },
+              "description": "Active tasks by queue",
+              "fieldConfig": {
+                "defaults": {
+                  "color": {
+                    "mode": "thresholds"
+                  },
+                  "fieldMinMax": false,
+                  "mappings": [],
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "color": "green",
                         "value": null
                       },
                       {
-                        "color": "green",
-                        "value": 0.1
+                        "color": "red",
+                        "value": 200
                       }
                     ]
                   },
@@ -165,12 +329,11 @@ dashboards:
               },
               "gridPos": {
                 "h": 4,
-                "w": 4,
+                "w": 24,
                 "x": 0,
-                "y": 1
+                "y": 7
               },
-              "id": 3,
-              "links": [],
+              "id": 12,
               "options": {
                 "colorMode": "value",
                 "graphMode": "area",
@@ -183,130 +346,41 @@ dashboards:
                   "fields": "",
                   "values": false
                 },
-                "textMode": "auto"
+                "showPercentChange": false,
+                "textMode": "auto",
+                "wideLayout": true
               },
               "pluginVersion": "9.3.6",
               "targets": [
                 {
                   "datasource": {
                     "type": "prometheus",
-                    "uid": "PBFA97CFB590B2093"
-                  },
-                  "editorMode": "code",
-                  "expr": "count(\n  celery_worker_up{\n    job=\"kubernetes-pods\",\n    namespace=\"workshop\"\n  } == 1\n)\n",
-                  "format": "time_series",
-                  "intervalFactor": 2,
-                  "legendFormat": "",
-                  "range": true,
-                  "refId": "A"
-                }
-              ],
-              "title": "Online Workers",
-              "type": "stat"
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "PBFA97CFB590B2093"
-              },
-              "fieldConfig": {
-                "defaults": {
-                  "links": [],
-                  "mappings": [],
-                  "thresholds": {
-                    "mode": "absolute",
-                    "steps": [
-                      {
-                        "color": "green",
-                        "value": null
-                      }
-                    ]
-                  },
-                  "unit": "short"
-                },
-                "overrides": []
-              },
-              "gridPos": {
-                "h": 4,
-                "w": 4,
-                "x": 4,
-                "y": 1
-              },
-              "id": 4,
-              "links": [],
-              "options": {
-                "colorMode": "value",
-                "graphMode": "area",
-                "justifyMode": "auto",
-                "orientation": "auto",
-                "reduceOptions": {
-                  "calcs": [
-                    "lastNotNull"
-                  ],
-                  "fields": "",
-                  "values": false
-                },
-                "textMode": "auto"
-              },
-              "pluginVersion": "9.3.6",
-              "targets": [
-                {
-                  "datasource": {
-                    "type": "prometheus",
-                    "uid": "PBFA97CFB590B2093"
+                    "uid": "Prometheus"
                   },
                   "editorMode": "code",
                   "expr": "sum(celery_worker_tasks_active{job=\"kubernetes-pods\", namespace=\"workshop\"})",
-                  "format": "time_series",
-                  "intervalFactor": 2,
-                  "legendFormat": "",
+                  "hide": false,
+                  "instant": false,
+                  "legendFormat": "Active Tasks",
                   "range": true,
-                  "refId": "A"
+                  "refId": "G"
                 }
               ],
-              "title": "Tasks Active",
+              "title": "Task Active",
               "type": "stat"
             },
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "PBFA97CFB590B2093"
+                "uid": "Prometheus"
               },
+              "description": "Average task runtime",
               "fieldConfig": {
                 "defaults": {
                   "color": {
-                    "mode": "palette-classic"
+                    "mode": "thresholds"
                   },
-                  "custom": {
-                    "axisCenteredZero": false,
-                    "axisColorMode": "text",
-                    "axisLabel": "",
-                    "axisPlacement": "auto",
-                    "barAlignment": 0,
-                    "drawStyle": "line",
-                    "fillOpacity": 10,
-                    "gradientMode": "none",
-                    "hideFrom": {
-                      "legend": false,
-                      "tooltip": false,
-                      "viz": false
-                    },
-                    "lineInterpolation": "linear",
-                    "lineWidth": 1,
-                    "pointSize": 5,
-                    "scaleDistribution": {
-                      "type": "linear"
-                    },
-                    "showPoints": "auto",
-                    "spanNulls": false,
-                    "stacking": {
-                      "group": "A",
-                      "mode": "none"
-                    },
-                    "thresholdsStyle": {
-                      "mode": "off"
-                    }
-                  },
+                  "fieldMinMax": false,
                   "mappings": [],
                   "thresholds": {
                     "mode": "absolute",
@@ -314,95 +388,24 @@ dashboards:
                       {
                         "color": "green",
                         "value": null
-                      }
-                    ]
-                  },
-                  "unit": "short"
-                },
-                "overrides": []
-              },
-              "gridPos": {
-                "h": 8,
-                "w": 16,
-                "x": 8,
-                "y": 1
-              },
-              "id": 5,
-              "links": [],
-              "options": {
-                "legend": {
-                  "calcs": [],
-                  "displayMode": "list",
-                  "placement": "bottom",
-                  "showLegend": true
-                },
-                "tooltip": {
-                  "mode": "multi",
-                  "sort": "none"
-                }
-              },
-              "pluginVersion": "9.3.6",
-              "targets": [
-                {
-                  "datasource": {
-                    "type": "prometheus",
-                    "uid": "PBFA97CFB590B2093"
-                  },
-                  "editorMode": "code",
-                  "expr": "sum(celery_task_sent_total) by (name)",
-                  "format": "time_series",
-                  "intervalFactor": 2,
-                  "legendFormat": "{{name}} - sent",
-                  "range": true,
-                  "refId": "A"
-                },
-                {
-                  "datasource": {
-                    "type": "prometheus",
-                    "uid": "PBFA97CFB590B2093"
-                  },
-                  "editorMode": "code",
-                  "expr": "sum(celery_task_received_total) by (name)",
-                  "format": "time_series",
-                  "intervalFactor": 2,
-                  "legendFormat": "{{name}} - received",
-                  "range": true,
-                  "refId": "B"
-                }
-              ],
-              "title": "Tasks (Sent and Received)",
-              "type": "timeseries"
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "PBFA97CFB590B2093"
-              },
-              "fieldConfig": {
-                "defaults": {
-                  "links": [],
-                  "mappings": [],
-                  "thresholds": {
-                    "mode": "absolute",
-                    "steps": [
+                      },
                       {
-                        "color": "green",
-                        "value": null
+                        "color": "red",
+                        "value": 200
                       }
                     ]
                   },
-                  "unit": "short"
+                  "unit": "s"
                 },
                 "overrides": []
               },
               "gridPos": {
                 "h": 4,
-                "w": 4,
+                "w": 24,
                 "x": 0,
-                "y": 5
+                "y": 11
               },
-              "id": 6,
-              "links": [],
+              "id": 21,
               "options": {
                 "colorMode": "value",
                 "graphMode": "area",
@@ -415,180 +418,219 @@ dashboards:
                   "fields": "",
                   "values": false
                 },
-                "textMode": "auto"
+                "showPercentChange": false,
+                "textMode": "auto",
+                "wideLayout": true
               },
               "pluginVersion": "9.3.6",
               "targets": [
                 {
                   "datasource": {
                     "type": "prometheus",
-                    "uid": "PBFA97CFB590B2093"
+                    "uid": "Prometheus"
                   },
                   "editorMode": "code",
-                  "expr": "sum(celery_task_received_total)",
-                  "format": "time_series",
-                  "intervalFactor": 2,
-                  "legendFormat": "",
+                  "expr": "sum(rate(celery_task_runtime_sum{job=\"kubernetes-pods\", namespace=\"workshop\"}[5m])) / sum(rate(celery_task_runtime_count{job=\"kubernetes-pods\", namespace=\"workshop\"}[5m])) > 0",
+                  "hide": false,
+                  "instant": false,
+                  "legendFormat": "Average Runtime",
                   "range": true,
-                  "refId": "A"
+                  "refId": "G"
                 }
               ],
-              "title": "Tasks Received",
+              "title": "Average Runtime for Tasks [5m]",
               "type": "stat"
             },
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "PBFA97CFB590B2093"
+                "uid": "Prometheus"
               },
+              "description": "Queue size over time",
               "fieldConfig": {
                 "defaults": {
-                  "links": [],
+                  "color": {
+                    "mode": "palette-classic"
+                  },
+                  "custom": {
+                    "axisBorderShow": false,
+                    "axisCenteredZero": false,
+                    "axisColorMode": "text",
+                    "axisLabel": "",
+                    "axisPlacement": "auto",
+                    "barAlignment": 0,
+                    "drawStyle": "line",
+                    "fillOpacity": 10,
+                    "gradientMode": "none",
+                    "hideFrom": {
+                      "legend": false,
+                      "tooltip": false,
+                      "viz": false
+                    },
+                    "insertNulls": false,
+                    "lineInterpolation": "linear",
+                    "lineWidth": 1,
+                    "pointSize": 5,
+                    "scaleDistribution": {
+                      "type": "linear"
+                    },
+                    "showPoints": "never",
+                    "spanNulls": false,
+                    "stacking": {
+                      "group": "A",
+                      "mode": "none"
+                    },
+                    "thresholdsStyle": {
+                      "mode": "off"
+                    }
+                  },
+                  "fieldMinMax": false,
                   "mappings": [],
                   "thresholds": {
                     "mode": "absolute",
                     "steps": [
                       {
-                        "color": "green",
-                        "value": null
+                        "color": "green"
+                      },
+                      {
+                        "color": "red",
+                        "value": 80
                       }
                     ]
                   },
-                  "unit": "short"
+                  "unit": "none"
                 },
                 "overrides": []
               },
               "gridPos": {
-                "h": 4,
-                "w": 4,
-                "x": 4,
-                "y": 5
+                "h": 9,
+                "w": 24,
+                "x": 0,
+                "y": 15
               },
-              "id": 7,
-              "links": [],
+              "id": 20,
               "options": {
-                "colorMode": "value",
-                "graphMode": "area",
-                "justifyMode": "auto",
-                "orientation": "auto",
-                "reduceOptions": {
+                "legend": {
                   "calcs": [
+                    "max",
+                    "min",
+                    "last"
+                  ],
+                  "displayMode": "table",
+                  "placement": "right",
+                  "showLegend": true
+                },
+                "tooltip": {
+                  "mode": "single",
+                  "sort": "none"
+                }
+              },
+              "pluginVersion": "9.3.6",
+              "targets": [
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "Prometheus"
+                  },
+                  "disableTextWrap": false,
+                  "editorMode": "code",
+                  "exemplar": true,
+                  "expr": "sum(celery_queue_length{job=\"kubernetes-pods\", namespace=\"workshop\"}) by (queue_name)",
+                  "fullMetaSearch": false,
+                  "hide": false,
+                  "includeNullMetadata": true,
+                  "instant": false,
+                  "legendFormat": "{{ queue_name }}",
+                  "range": true,
+                  "refId": "B",
+                  "useBackend": false
+                }
+              ],
+              "title": "Queue Size by Queue Name",
+              "type": "timeseries"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "Prometheus"
+              },
+              "description": "Task status overview",
+              "fieldConfig": {
+                "defaults": {
+                  "color": {
+                    "mode": "palette-classic"
+                  },
+                  "custom": {
+                    "axisBorderShow": false,
+                    "axisCenteredZero": false,
+                    "axisColorMode": "text",
+                    "axisLabel": "",
+                    "axisPlacement": "auto",
+                    "barAlignment": 0,
+                    "drawStyle": "line",
+                    "fillOpacity": 10,
+                    "gradientMode": "none",
+                    "hideFrom": {
+                      "legend": false,
+                      "tooltip": false,
+                      "viz": false
+                    },
+                    "insertNulls": false,
+                    "lineInterpolation": "linear",
+                    "lineWidth": 1,
+                    "pointSize": 5,
+                    "scaleDistribution": {
+                      "type": "linear"
+                    },
+                    "showPoints": "never",
+                    "spanNulls": false,
+                    "stacking": {
+                      "group": "A",
+                      "mode": "none"
+                    },
+                    "thresholdsStyle": {
+                      "mode": "off"
+                    }
+                  },
+                  "fieldMinMax": false,
+                  "mappings": [],
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "color": "green"
+                      },
+                      {
+                        "color": "red",
+                        "value": 80
+                      }
+                    ]
+                  },
+                  "unit": "none"
+                },
+                "overrides": []
+              },
+              "gridPos": {
+                "h": 10,
+                "w": 24,
+                "x": 0,
+                "y": 24
+              },
+              "id": 19,
+              "options": {
+                "legend": {
+                  "calcs": [
+                    "max",
                     "lastNotNull"
                   ],
-                  "fields": "",
-                  "values": false
-                },
-                "textMode": "auto"
-              },
-              "pluginVersion": "9.3.6",
-              "targets": [
-                {
-                  "datasource": {
-                    "type": "prometheus",
-                    "uid": "PBFA97CFB590B2093"
-                  },
-                  "editorMode": "code",
-                  "expr": "sum(celery_task_succeeded_total)",
-                  "format": "time_series",
-                  "intervalFactor": 2,
-                  "legendFormat": "",
-                  "range": true,
-                  "refId": "A"
-                }
-              ],
-              "title": "Tasks Succeeded",
-              "type": "stat"
-            },
-            {
-              "collapsed": false,
-              "datasource": {
-                "type": "prometheus",
-                "uid": "PBFA97CFB590B2093"
-              },
-              "gridPos": {
-                "h": 1,
-                "w": 24,
-                "x": 0,
-                "y": 9
-              },
-              "id": 8,
-              "panels": [],
-              "showTitle": true,
-              "title": "Task details",
-              "titleSize": "h6",
-              "type": "row"
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "PBFA97CFB590B2093"
-              },
-              "fieldConfig": {
-                "defaults": {
-                  "color": {
-                    "mode": "palette-classic"
-                  },
-                  "custom": {
-                    "axisCenteredZero": false,
-                    "axisColorMode": "text",
-                    "axisLabel": "",
-                    "axisPlacement": "auto",
-                    "barAlignment": 0,
-                    "drawStyle": "line",
-                    "fillOpacity": 10,
-                    "gradientMode": "none",
-                    "hideFrom": {
-                      "legend": false,
-                      "tooltip": false,
-                      "viz": false
-                    },
-                    "lineInterpolation": "linear",
-                    "lineWidth": 1,
-                    "pointSize": 5,
-                    "scaleDistribution": {
-                      "type": "linear"
-                    },
-                    "showPoints": "auto",
-                    "spanNulls": false,
-                    "stacking": {
-                      "group": "A",
-                      "mode": "none"
-                    },
-                    "thresholdsStyle": {
-                      "mode": "off"
-                    }
-                  },
-                  "mappings": [],
-                  "thresholds": {
-                    "mode": "absolute",
-                    "steps": [
-                      {
-                        "color": "green",
-                        "value": null
-                      }
-                    ]
-                  },
-                  "unit": "short"
-                },
-                "overrides": []
-              },
-              "gridPos": {
-                "h": 8,
-                "w": 12,
-                "x": 0,
-                "y": 10
-              },
-              "id": 9,
-              "links": [],
-              "options": {
-                "legend": {
-                  "calcs": [],
-                  "displayMode": "list",
-                  "placement": "bottom",
-                  "showLegend": true
+                  "displayMode": "table",
+                  "placement": "right",
+                  "showLegend": true,
+                  "sortBy": "Max",
+                  "sortDesc": true
                 },
                 "tooltip": {
-                  "mode": "multi",
+                  "mode": "single",
                   "sort": "none"
                 }
               },
@@ -597,137 +639,83 @@ dashboards:
                 {
                   "datasource": {
                     "type": "prometheus",
-                    "uid": "PBFA97CFB590B2093"
+                    "uid": "Prometheus"
                   },
+                  "disableTextWrap": false,
                   "editorMode": "code",
-                  "expr": "sum(celery_task_succeeded_total) by (name)",
-                  "format": "time_series",
-                  "intervalFactor": 2,
-                  "legendFormat": "{{name}} - succeeded",
+                  "exemplar": true,
+                  "expr": "sum(increase(celery_task_succeeded_total{job=\"kubernetes-pods\", namespace=\"workshop\"}[$__rate_interval]))",
+                  "fullMetaSearch": false,
+                  "hide": false,
+                  "includeNullMetadata": true,
+                  "instant": false,
+                  "legendFormat": "Succeeded",
                   "range": true,
-                  "refId": "A"
-                }
-              ],
-              "title": "Tasks succeeded",
-              "type": "timeseries"
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "PBFA97CFB590B2093"
-              },
-              "fieldConfig": {
-                "defaults": {
-                  "color": {
-                    "mode": "palette-classic"
-                  },
-                  "custom": {
-                    "axisCenteredZero": false,
-                    "axisColorMode": "text",
-                    "axisLabel": "",
-                    "axisPlacement": "auto",
-                    "barAlignment": 0,
-                    "drawStyle": "line",
-                    "fillOpacity": 10,
-                    "gradientMode": "none",
-                    "hideFrom": {
-                      "legend": false,
-                      "tooltip": false,
-                      "viz": false
-                    },
-                    "lineInterpolation": "linear",
-                    "lineWidth": 1,
-                    "pointSize": 5,
-                    "scaleDistribution": {
-                      "type": "linear"
-                    },
-                    "showPoints": "auto",
-                    "spanNulls": false,
-                    "stacking": {
-                      "group": "A",
-                      "mode": "none"
-                    },
-                    "thresholdsStyle": {
-                      "mode": "off"
-                    }
-                  },
-                  "mappings": [],
-                  "thresholds": {
-                    "mode": "absolute",
-                    "steps": [
-                      {
-                        "color": "green",
-                        "value": null
-                      }
-                    ]
-                  },
-                  "unit": "short"
+                  "refId": "B",
+                  "useBackend": false
                 },
-                "overrides": []
-              },
-              "gridPos": {
-                "h": 8,
-                "w": 12,
-                "x": 12,
-                "y": 10
-              },
-              "id": 10,
-              "links": [],
-              "options": {
-                "legend": {
-                  "calcs": [],
-                  "displayMode": "list",
-                  "placement": "bottom",
-                  "showLegend": true
-                },
-                "tooltip": {
-                  "mode": "multi",
-                  "sort": "none"
-                }
-              },
-              "pluginVersion": "9.3.6",
-              "targets": [
                 {
                   "datasource": {
                     "type": "prometheus",
-                    "uid": "PBFA97CFB590B2093"
+                    "uid": "Prometheus"
                   },
                   "editorMode": "code",
-                  "expr": "sum(celery_task_failed_total) by (name)",
-                  "format": "time_series",
-                  "intervalFactor": 2,
-                  "legendFormat": "{{name}} - failed",
+                  "expr": "sum(increase(celery_task_failed_total{job=\"kubernetes-pods\", namespace=\"workshop\"}[$__rate_interval]))",
+                  "hide": false,
+                  "instant": false,
+                  "legendFormat": "Failed",
                   "range": true,
                   "refId": "A"
+                },
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "Prometheus"
+                  },
+                  "editorMode": "code",
+                  "expr": "sum(increase(celery_task_sent_total{job=\"kubernetes-pods\", namespace=\"workshop\"}[$__rate_interval]))",
+                  "hide": false,
+                  "instant": false,
+                  "legendFormat": "Sent",
+                  "range": true,
+                  "refId": "C"
+                },
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "Prometheus"
+                  },
+                  "editorMode": "code",
+                  "expr": "sum(increase(celery_task_received_total{job=\"kubernetes-pods\", namespace=\"workshop\"}[$__rate_interval]))",
+                  "hide": false,
+                  "instant": false,
+                  "legendFormat": "Received",
+                  "range": true,
+                  "refId": "D"
+                },
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "Prometheus"
+                  },
+                  "editorMode": "code",
+                  "expr": "sum(increase(celery_task_retried_total{job=\"kubernetes-pods\", namespace=\"workshop\"}[$__rate_interval]))",
+                  "hide": false,
+                  "instant": false,
+                  "legendFormat": "Retried",
+                  "range": true,
+                  "refId": "E"
                 }
               ],
-              "title": "Tasks failed",
+              "title": "Task Status Overview",
               "type": "timeseries"
             },
             {
-              "collapsed": false,
               "datasource": {
                 "type": "prometheus",
-                "uid": "PBFA97CFB590B2093"
+                "uid": "Prometheus"
               },
-              "gridPos": {
-                "h": 1,
-                "w": 24,
-                "x": 0,
-                "y": 18
-              },
-              "id": 11,
-              "panels": [],
-              "showTitle": true,
-              "title": "Workers",
-              "titleSize": "h6",
-              "type": "row"
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "PBFA97CFB590B2093"
-              },
+              "description": "This panel shows worker status (online/offline)",
               "fieldConfig": {
                 "defaults": {
                   "color": {
@@ -766,7 +754,7 @@ dashboards:
                 "h": 8,
                 "w": 12,
                 "x": 0,
-                "y": 19
+                "y": 34
               },
               "id": 12,
               "options": {
@@ -788,7 +776,7 @@ dashboards:
                 {
                   "datasource": {
                     "type": "prometheus",
-                    "uid": "PBFA97CFB590B2093"
+                    "uid": "Prometheus"
                   },
                   "editorMode": "code",
                   "expr": "celery_worker_up{job=\"kubernetes-pods\", namespace=\"workshop\"}",
@@ -803,14 +791,16 @@ dashboards:
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "PBFA97CFB590B2093"
+                "uid": "Prometheus"
               },
+              "description": "Active tasks by worker",
               "fieldConfig": {
                 "defaults": {
                   "color": {
                     "mode": "palette-classic"
                   },
                   "custom": {
+                    "axisBorderShow": false,
                     "axisCenteredZero": false,
                     "axisColorMode": "text",
                     "axisLabel": "",
@@ -824,6 +814,7 @@ dashboards:
                       "tooltip": false,
                       "viz": false
                     },
+                    "insertNulls": false,
                     "lineInterpolation": "linear",
                     "lineWidth": 1,
                     "pointSize": 5,
@@ -858,10 +849,9 @@ dashboards:
                 "h": 8,
                 "w": 12,
                 "x": 12,
-                "y": 19
+                "y": 34
               },
               "id": 13,
-              "links": [],
               "options": {
                 "legend": {
                   "calcs": [],
@@ -879,7 +869,7 @@ dashboards:
                 {
                   "datasource": {
                     "type": "prometheus",
-                    "uid": "PBFA97CFB590B2093"
+                    "uid": "Prometheus"
                   },
                   "editorMode": "code",
                   "expr": "celery_worker_tasks_active{job=\"kubernetes-pods\", namespace=\"workshop\"}",
@@ -890,20 +880,22 @@ dashboards:
                   "refId": "A"
                 }
               ],
-              "title": "Active tasks by worker",
+              "title": "Active Tasks by Worker",
               "type": "timeseries"
             },
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "PBFA97CFB590B2093"
+                "uid": "Prometheus"
               },
+              "description": "Success/failure rate by task",
               "fieldConfig": {
                 "defaults": {
                   "color": {
                     "mode": "palette-classic"
                   },
                   "custom": {
+                    "axisBorderShow": false,
                     "axisCenteredZero": false,
                     "axisColorMode": "text",
                     "axisLabel": "",
@@ -917,13 +909,14 @@ dashboards:
                       "tooltip": false,
                       "viz": false
                     },
+                    "insertNulls": false,
                     "lineInterpolation": "linear",
                     "lineWidth": 1,
                     "pointSize": 5,
                     "scaleDistribution": {
                       "type": "linear"
                     },
-                    "showPoints": "auto",
+                    "showPoints": "never",
                     "spanNulls": false,
                     "stacking": {
                       "group": "A",
@@ -951,10 +944,9 @@ dashboards:
                 "h": 8,
                 "w": 24,
                 "x": 0,
-                "y": 27
+                "y": 42
               },
               "id": 14,
-              "links": [],
               "options": {
                 "legend": {
                   "calcs": [],
@@ -972,31 +964,46 @@ dashboards:
                 {
                   "datasource": {
                     "type": "prometheus",
-                    "uid": "PBFA97CFB590B2093"
+                    "uid": "Prometheus"
                   },
                   "editorMode": "code",
-                  "expr": "sum(celery_task_succeeded_total) by (hostname)",
+                  "expr": "sum(celery_task_succeeded_total{job=\"kubernetes-pods\", namespace=\"workshop\"}) by (name)",
                   "format": "time_series",
                   "intervalFactor": 2,
-                  "legendFormat": "{{hostname}} - succeeded",
+                  "legendFormat": "{{name}} - succeeded",
                   "range": true,
                   "refId": "A"
+                },
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "Prometheus"
+                  },
+                  "editorMode": "code",
+                  "expr": "sum(celery_task_failed_total{job=\"kubernetes-pods\", namespace=\"workshop\"}) by (name)",
+                  "format": "time_series",
+                  "intervalFactor": 2,
+                  "legendFormat": "{{name}} - failed",
+                  "range": true,
+                  "refId": "B"
                 }
               ],
-              "title": "Task Success by Worker",
+              "title": "Task Success/Failure by Name",
               "type": "timeseries"
             },
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "PBFA97CFB590B2093"
+                "uid": "Prometheus"
               },
+              "description": "Task Success Rate (operations per second)",
               "fieldConfig": {
                 "defaults": {
                   "color": {
                     "mode": "palette-classic"
                   },
                   "custom": {
+                    "axisBorderShow": false,
                     "axisCenteredZero": false,
                     "axisColorMode": "text",
                     "axisLabel": "Tasks per second",
@@ -1044,10 +1051,9 @@ dashboards:
                 "h": 8,
                 "w": 24,
                 "x": 0,
-                "y": 35
+                "y": 50
               },
               "id": 15,
-              "links": [],
               "options": {
                 "legend": {
                   "calcs": [],
@@ -1065,10 +1071,10 @@ dashboards:
                 {
                   "datasource": {
                     "type": "prometheus",
-                    "uid": "PBFA97CFB590B2093"
+                    "uid": "Prometheus"
                   },
                   "editorMode": "code",
-                  "expr": "sum(irate(celery_task_succeeded_total[30s])) by (name)",
+                  "expr": "sum(irate(celery_task_succeeded_total{job=\"kubernetes-pods\", namespace=\"workshop\"}[30s])) by (name)",
                   "format": "time_series",
                   "intervalFactor": 2,
                   "legendFormat": "{{name}} - rate",
@@ -1084,7 +1090,8 @@ dashboards:
           "schemaVersion": 38,
           "style": "dark",
           "tags": [
-            "celery"
+            "celery",
+            "monitoring"
           ],
           "templating": {
             "list": []
