@@ -2,10 +2,11 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "celery-app.fullname" . }}-worker
+  name: {{ include "celery-app.fullname" . }}-{{ .Values.celery.worker.name | default "worker" }}
   labels:
     {{- include "celery-app.labels" . | nindent 4 }}
     component: worker
+    queue: default
 spec:
   {{- if not .Values.celery.worker.autoscaling.enabled }}
   replicas: {{ .Values.celery.worker.replicas }}
@@ -14,6 +15,7 @@ spec:
     matchLabels:
       {{- include "celery-app.selectorLabels" . | nindent 6 }}
       component: worker
+      queue: default
   template:
     metadata:
       {{- with .Values.podAnnotations }}
@@ -27,6 +29,7 @@ spec:
       labels:
         {{- include "celery-app.selectorLabels" . | nindent 8 }}
         component: worker
+        queue: default
     spec:
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
@@ -36,7 +39,7 @@ spec:
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
-        - name: {{ .Chart.Name }}-worker
+        - name: {{ .Chart.Name }}-{{ .Values.celery.worker.name | default "worker" }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"

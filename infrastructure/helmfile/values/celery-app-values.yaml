@@ -16,6 +16,7 @@ celery:
   worker:
     enabled: true
     replicas: 2
+    name: celery-app-default-worker
     # KEDA ScaledObject configuration
     autoscaling:
       enabled: true
@@ -27,7 +28,7 @@ celery:
         horizontalPodAutoscalerConfig:
           behavior:
             scaleDown:
-              stabilizationWindowSeconds: 300
+              stabilizationWindowSeconds: 30
               policies:
                 - type: Percent
                   value: 100
@@ -45,8 +46,8 @@ celery:
         - type: prometheus
           metadata:
             serverAddress: http://prometheus-server.monitoring.svc.cluster.local:80
-            threshold: "10"
-            query: sum(celery_active_process_count{queue_name="default"})
+            threshold: "1"
+            query: ceil(sum(celery_worker_tasks_active{hostname=~".*app-default-worker.*"})/15)
     
   flower:
     enabled: true

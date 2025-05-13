@@ -2,16 +2,17 @@
 apiVersion: keda.sh/v1alpha1
 kind: ScaledObject
 metadata:
-  name: {{ include "celery-app.fullname" . }}-worker
+  name: {{ include "celery-app.fullname" . }}-{{ .Values.celery.worker.name | default "worker" }}
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "celery-app.labels" . | nindent 4 }}
     component: worker
+    queue: default
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: {{ include "celery-app.fullname" . }}-worker
+    name: {{ include "celery-app.fullname" . }}-{{ .Values.celery.worker.name | default "worker" }}
   minReplicaCount: {{ .Values.celery.worker.autoscaling.minReplicas }}
   maxReplicaCount: {{ .Values.celery.worker.autoscaling.maxReplicas }}
   pollingInterval: {{ .Values.celery.worker.autoscaling.pollingInterval }}
