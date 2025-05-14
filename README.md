@@ -11,6 +11,9 @@ This repository contains the infrastructure and application code for the Upscale
 - Docker
 - curl
 - kubectl
+- helm
+- helmfile
+- k3d
 
 ### Setup
 
@@ -21,7 +24,7 @@ First, check your environment for all required dependencies:
 make check-dependencies
 
 # Install all required tools at once
-make install-all
+make install-tools
 ```
 
 The workshop environment can be set up using the provided Makefile:
@@ -31,7 +34,7 @@ The workshop environment can be set up using the provided Makefile:
 make setup-cluster
 
 # Option 2: Complete setup - cluster + all services (Redis, etc.)
-make setup-all
+make start-workshop
 ```
 
 This will:
@@ -40,26 +43,23 @@ This will:
 3. Deploy the base applications in the workshop namespace
 4. Deploy Redis with 2Gi memory allocation (with option 2)
 5. Deploy Prometheus and Grafana for monitoring (with option 2)
-6. Configure port forwarding to access the services
-
-The nginx service will be available at: http://localhost:8080
 
 ### Infrastructure as Code with Helmfile
 
 The workshop includes Helmfile configurations to deploy additional services:
 
 ```bash
-# Install Helmfile and its dependencies
-make install-helmfile
+# Install Helmfile and its dependencies (included in make install-tools)
+make install-tools
 
 # Deploy services defined in the Helmfile (Redis, etc.)
-make helm-deploy
+make deploy-services
 
 # Deploy only the core infrastructure (labeled as "scaffolding")
-make scaffold-deploy
+cd infrastructure/deployment/helmfile && helmfile apply --selector category=scaffolding
 
-# Remove Helmfile-deployed services
-make helm-destroy
+# Remove all workshop resources
+make clean-all
 ```
 
 The Redis instance is configured with 2Gi of memory. no password authentication.
@@ -93,18 +93,45 @@ To clean up the environment when you're done:
 
 ```bash
 # This removes all Helm releases and the Kubernetes cluster
-make clean-cluster
+make clean-all
 ```
 
 ## Repository Structure
 
-- `infrastructure/`: Infrastructure-related files
-  - `kubernetes/`: Kubernetes configuration
-    - `deployments/`: Kubernetes deployment manifests
-  - `helmfile/`: Helmfile configurations for service deployment
-    - `values/`: Helm chart values
-- `app/`: Application code (to be developed during the workshop)
-- `load-testing/`: Load testing scripts and configurations
+- `docs/`: Documentation resources
+  - `architecture/`: System architecture diagrams and explanations
+  - `workshop-guide/`: Guides for workshop instructors and participants
+- `workshop/`: Workshop materials
+  - `hands-on/`: Google Colab notebooks
+  - `exercises/`: Guided exercises
+  - `resources/`: Workshop resources and references
+- `infrastructure/`: Infrastructure code
+  - `cluster/`: Cluster configuration
+    - `k3d/`: k3d cluster configuration
+  - `platform/`: Core platform services
+    - `observability/`: Monitoring and logging
+      - `grafana/`: Grafana configurations
+      - `prometheus/`: Prometheus configurations
+    - `messaging/`: Message broker services
+      - `redis/`: Redis configurations
+    - `scaling/`: Autoscaling configuration
+      - `keda/`: KEDA configurations
+  - `services/`: Application services
+    - `celery-app/`: Celery application
+      - `helm/`: Celery app Helm chart
+    - `balancer/`: Load balancer service
+      - `helm/`: Inference balancer Helm chart
+      - `nginx/`: Nginx configuration
+  - `deployment/`: Deployment configurations
+    - `helmfile/`: Helmfile deployment definitions
+    - `kubernetes/`: Raw Kubernetes manifests
+- `apps/`: Application code
+  - `backend/`: Backend Celery application
+  - `frontend/`: Frontend application (placeholder)
+- `testing/`: Testing tools and configurations
+  - `load-testing/`: Load testing scripts
+  - `performance/`: Performance benchmarks
+  - `results/`: Directory for test results
 
 ## Workshop Exercises
 
@@ -114,4 +141,3 @@ The workshop will guide you through:
 2. Deploying basic services and infrastructure with Helmfile
 3. Implementing scalable application patterns
 4. Load testing and optimization with real-time monitoring
-5. Advanced scaling techniques

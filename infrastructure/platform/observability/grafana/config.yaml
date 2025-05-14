@@ -1,0 +1,11 @@
+  # Grafana for visualization
+  - name: grafana
+    namespace: monitoring
+    chart: grafana/grafana
+    version: "6.50.7"  # Updated to a more recent version
+    labels:
+      category: scaffolding
+    values:
+      - values/grafana-values.yaml
+  
+  # Celery App with Redis and FastAPI
