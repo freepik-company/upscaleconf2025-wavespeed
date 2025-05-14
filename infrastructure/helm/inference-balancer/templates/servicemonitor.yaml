@@ -1,0 +1,23 @@
+{{- if .Values.serviceMonitor.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "inference-balancer.fullname" . }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "inference-balancer.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "inference-balancer.selectorLabels" . | nindent 6 }}
+  endpoints:
+  - port: metrics
+    interval: 10s
+    path: /metrics
+  - port: log-metrics
+    interval: 10s
+    path: /metrics
+  namespaceSelector:
+    matchNames:
+    - {{ .Values.namespace }}
+{{- end }} 

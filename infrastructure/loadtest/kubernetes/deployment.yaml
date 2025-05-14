@@ -23,9 +23,9 @@ spec:
         - name: LOCUST_HOST
           value: "http://celery-app-api"
         - name: LOCUST_USERS
-          value: "500"
+          value: "10"
         - name: LOCUST_SPAWN_RATE
-          value: "50"
+          value: "5"
         - name: LOCUST_RUN_TIME
           value: "48h"  # Run for 48 hours continuously
         resources:
