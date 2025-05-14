@@ -1,4 +1,4 @@
-.PHONY: help check-dependencies install-tools setup-cluster start-workshop deploy-services deploy-app deploy-balancer run-loadtest show-ui clean-all
+.PHONY: help check-dependencies install-tools setup-cluster start-workshop deploy-services deploy-app deploy-balancer deploy-webhook run-loadtest show-ui clean-all
 
 # Default target
 help:
@@ -13,6 +13,7 @@ help:
 	@echo "  make deploy-services       - Deploy platform services (Redis, Prometheus, Grafana, KEDA)"
 	@echo "  make deploy-app            - Build and deploy Celery application"
 	@echo "  make deploy-balancer       - Deploy the inference balancer"
+	@echo "  make deploy-webhook        - Deploy the webhook service"
 	@echo "  make run-loadtest          - Run load testing against the application"
 	@echo "  make show-ui               - Show URLs for all UIs"
 	@echo "  make clean-all             - Remove all workshop resources"
@@ -85,6 +86,7 @@ setup-cluster: check-dependencies
 	@kubectl create namespace monitoring || true
 	@kubectl create namespace keda || true
 	@kubectl create namespace inference-balancer || true
+	@kubectl create namespace webhook || true
 	@echo "k3d cluster is set up and running."
 	@echo "You can access the cluster with: kubectl get nodes"
 	@echo ""
@@ -124,6 +126,14 @@ deploy-balancer: check-dependencies
 	@echo "Inference balancer deployed successfully."
 	@echo "Next step: run load test with 'make run-loadtest'"
 
+# Deploy webhook service
+deploy-webhook: check-dependencies
+	@echo "Deploying webhook service..."
+	@kubectl create namespace webhook || true
+	@helm upgrade --install webhook infrastructure/services/webhook -n webhook --wait
+	@echo "Webhook service deployed successfully."
+	@echo "Webhook endpoint available at: http://webhook.webhook.svc.cluster.local/publish-response"
+
 # Run load test
 run-loadtest: check-dependencies
 	@echo "Building and deploying load test..."
@@ -135,7 +145,7 @@ run-loadtest: check-dependencies
 	@echo "To monitor the system: make grafana-ui"
 
 # Complete workshop workflow in one step
-start-workshop: setup-cluster deploy-services deploy-app deploy-balancer
+start-workshop: setup-cluster deploy-services deploy-app deploy-balancer deploy-webhook
 	@echo "Workshop environment is fully set up!"
 	@echo "Next step: run load test with 'make run-loadtest'"
 	@echo "To view all UIs: make show-ui"
