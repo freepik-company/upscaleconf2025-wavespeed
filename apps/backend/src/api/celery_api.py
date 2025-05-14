@@ -16,7 +16,9 @@ class WebhookRequest(BaseModel):
     seed: Optional[int] = None
 
 class WebsocketRequest(BaseModel):
-    websocket_url: str
+    websocket_url: Optional[str] = None
+    prompt: Optional[str] = None
+    seed: Optional[int] = None
 
 @app.post("/flux", response_model=TaskResponse)
 async def submit_flux_task():
@@ -97,8 +99,12 @@ async def submit_websocket_task(
                 detail=f"Task for inference model '{inference_model}' not found"
             )
             
-        # Execute the task
-        celery_task = task.delay(request.websocket_url)
+        # Execute the task with all parameters
+        celery_task = task.delay(
+            websocket_url=request.websocket_url,
+            prompt=request.prompt,
+            seed=request.seed
+        )
         return TaskResponse(task_id=celery_task.id)
     except HTTPException:
         raise

@@ -94,31 +94,64 @@ def webhook_flux(self, webhook_url=None, prompt=None, seed=None):
         return {"error": str(e)}
 
 @app.task(bind=True, name='tasks.websocket_flux', queue='default')
-def websocket_flux(self, websocket_url):
+def websocket_flux(self, websocket_url=None, prompt=None, seed=None):
     """
     Task that makes a request to the inference-balancer endpoint 
     and forwards the response to a websocket endpoint.
+    
+    Args:
+        websocket_url: Optional URL to send the websocket response to.
+                      Defaults to visualize-websocket.frontend.svc.cluster.local/publish
+        prompt: The prompt text to send to the inference-balancer
+        seed: The seed value to use for the inference
     """
+    # Use default websocket URL if none provided
+    if websocket_url is None:
+        websocket_url = "http://visualize-websocket.frontend.svc.cluster.local:8766/publish"
+    
     logger.info(f"Task ID: {self.request.id} - Sending request to inference-balancer (websocket)")
     try:
+        # Prepare request payload
+        payload = {}
+        if prompt is not None:
+            payload["prompt"] = prompt
+        if seed is not None:
+            payload["seed"] = seed
+            
         # Call the inference balancer
-        response = requests.get("http://inference-balancer-main.inference-balancer.svc.cluster.local:80/flux")
+        if payload:
+            logger.info(f"Task ID: {self.request.id} - Sending payload: {payload}")
+            response = requests.post(
+                "http://inference-balancer-main.inference-balancer.svc.cluster.local:80/flux",
+                headers={"Content-Type": "application/json"},
+                data=json.dumps(payload)
+            )
+        else:
+            response = requests.get("http://inference-balancer-main.inference-balancer.svc.cluster.local:80/flux")
+            
         status_code = response.status_code
         response_text = response.text
         logger.info(f"Task ID: {self.request.id} - Got response: {status_code}, content: {response_text}")
         
         # Prepare the payload for the websocket
-        payload = {
+        websocket_payload = {
             "task_id": self.request.id,
             "status_code": status_code,
             "response": response_text
         }
         
+        # Include original request in the websocket payload
+        if prompt is not None:
+            websocket_payload["prompt"] = prompt
+        if seed is not None:
+            websocket_payload["seed"] = seed
+        
         # Send the response to the websocket endpoint
+        logger.info(f"Task ID: {self.request.id} - Sending to WebSocket: {websocket_url}")
         websocket_response = requests.post(
             websocket_url,
             headers={"Content-Type": "application/json"},
-            data=json.dumps(payload)
+            json=websocket_payload
         )
         
         logger.info(f"Task ID: {self.request.id} - Websocket delivery status: {websocket_response.status_code}")

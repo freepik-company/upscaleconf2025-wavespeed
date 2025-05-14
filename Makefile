@@ -1,4 +1,4 @@
-.PHONY: help check-dependencies install-tools setup-cluster start-workshop deploy-services deploy-app deploy-balancer deploy-webhook run-loadtest show-ui clean-all
+.PHONY: help check-dependencies install-tools setup-cluster start-workshop deploy-services deploy-app deploy-balancer deploy-webhook deploy-frontend run-loadtest show-ui clean-all
 
 # Default target
 help:
@@ -14,6 +14,7 @@ help:
 	@echo "  make deploy-app            - Build and deploy Celery application"
 	@echo "  make deploy-balancer       - Deploy the inference balancer"
 	@echo "  make deploy-webhook        - Deploy the webhook service"
+	@echo "  make deploy-frontend       - Deploy the visualization frontend"
 	@echo "  make run-loadtest          - Run load testing against the application"
 	@echo "  make show-ui               - Show URLs for all UIs"
 	@echo "  make clean-all             - Remove all workshop resources"
@@ -24,6 +25,7 @@ help:
 	@echo "  make api-ui                - Access Celery API UI (http://localhost:8000)"
 	@echo "  make flower-ui             - Access Celery Flower UI (http://localhost:5555)"
 	@echo "  make loadtest-ui           - Access Load Test UI (http://localhost:8089)"
+	@echo "  make frontend-ui           - Access Visualization UI (http://localhost:8080) with WebSocket support"
 	@echo ""
 	@echo "For more detailed commands, see Makefile.original"
 
@@ -87,6 +89,7 @@ setup-cluster: check-dependencies
 	@kubectl create namespace keda || true
 	@kubectl create namespace inference-balancer || true
 	@kubectl create namespace webhook || true
+	@kubectl create namespace frontend || true
 	@echo "k3d cluster is set up and running."
 	@echo "You can access the cluster with: kubectl get nodes"
 	@echo ""
@@ -134,6 +137,19 @@ deploy-webhook: check-dependencies
 	@echo "Webhook service deployed successfully."
 	@echo "Webhook endpoint available at: http://webhook.webhook.svc.cluster.local/publish-response"
 
+# Deploy frontend visualization
+deploy-frontend: check-dependencies
+	@echo "Building and deploying frontend visualization..."
+	@docker build --platform linux/amd64 -t localhost:5000/static-web-app:latest -f apps/frontend/Dockerfile.static apps/frontend/
+	@docker build --platform linux/amd64 -t localhost:5000/websocket-server:latest -f apps/frontend/Dockerfile.websocket apps/frontend/
+	@k3d image import localhost:5000/static-web-app:latest localhost:5000/websocket-server:latest --cluster workshop-cluster
+	@kubectl create namespace frontend || true
+	@helm upgrade --install visualize infrastructure/services/frontend/visualize -n frontend --wait
+	@echo "Frontend visualization deployed successfully."
+	@echo "Static web app available at: http://visualize-static.frontend.svc.cluster.local"
+	@echo "WebSocket server available at: ws://visualize-websocket.frontend.svc.cluster.local:8765"
+	@echo "WebSocket HTTP endpoint: http://visualize-websocket.frontend.svc.cluster.local:8766/publish"
+
 # Run load test
 run-loadtest: check-dependencies
 	@echo "Building and deploying load test..."
@@ -145,7 +161,7 @@ run-loadtest: check-dependencies
 	@echo "To monitor the system: make grafana-ui"
 
 # Complete workshop workflow in one step
-start-workshop: setup-cluster deploy-services deploy-app deploy-balancer deploy-webhook
+start-workshop: setup-cluster deploy-services deploy-app deploy-balancer deploy-webhook deploy-frontend
 	@echo "Workshop environment is fully set up!"
 	@echo "Next step: run load test with 'make run-loadtest'"
 	@echo "To view all UIs: make show-ui"
@@ -158,6 +174,7 @@ show-ui:
 	@echo "- Celery API: http://localhost:8000 (run 'make api-ui')"
 	@echo "- Celery Flower: http://localhost:5555 (run 'make flower-ui')"
 	@echo "- Load Test UI: http://localhost:8089 (run 'make loadtest-ui')"
+	@echo "- Visualization UI: http://localhost:8081 (run 'make frontend-ui')"
 
 # UI access commands
 grafana-ui:
@@ -184,6 +201,18 @@ loadtest-ui:
 	@echo "Opening Load Test UI..."
 	@echo "Load Test UI will be available at: http://localhost:8089"
 	@kubectl port-forward -n workshop svc/celery-loadtest 8089:8089
+
+# New frontend UI target that forwards both services
+frontend-ui:
+	@echo "Starting frontend visualization UI with WebSocket support..."
+	@echo "Static web app will be available at: http://localhost:8081"
+	@echo "WebSocket server will be available at: ws://localhost:8765"
+	@echo "WebSocket HTTP endpoint will be available at: http://localhost:8767/publish"
+	@echo "Starting port forwarding (press Ctrl+C to stop)..."
+	@kubectl port-forward -n frontend svc/visualize-static 8081:80 & \
+	kubectl port-forward -n frontend svc/visualize-websocket 8765:8765 8767:8766 & \
+	echo "All services forwarded. Press Ctrl+C to stop." && \
+	wait
 
 # Clean up
 clean-all:

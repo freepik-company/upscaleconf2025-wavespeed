@@ -1,0 +1,23 @@
+{{- if .Values.websocket.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "visualize.fullname" . }}-websocket
+  labels:
+    {{- include "visualize.labels" . | nindent 4 }}
+    app.kubernetes.io/component: websocket
+spec:
+  type: {{ .Values.websocket.service.type }}
+  ports:
+    - port: {{ .Values.websocket.service.wsPort }}
+      targetPort: ws
+      protocol: TCP
+      name: ws
+    - port: {{ .Values.websocket.service.httpPort }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "visualize.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: websocket
+{{- end }} 
