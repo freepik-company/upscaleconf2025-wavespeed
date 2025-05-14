@@ -89,7 +89,7 @@ releases:
   # Celery App with Redis and FastAPI
   - name: celery-app
     namespace: workshop
-    chart: ../helm/celery-app
+    chart: ../../services/celery-app/helm
     labels:
       category: application
     values:

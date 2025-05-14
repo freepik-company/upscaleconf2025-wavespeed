@@ -1,0 +1,21 @@
+  # Redis - In-memory data store for caching and message broker
+  - name: redis
+    namespace: workshop
+    chart: bitnami/redis
+    version: "17.3.14"  # Specify a version for reproducibility
+    labels:
+      category: scaffolding
+    values:
+      - values/redis-values.yaml
+      - architecture: standalone
+        auth:
+          enabled: false  # Disabled password authentication
+        master:
+          persistence:
+            enabled: true
+            size: 3Gi  # 3Gi storage as requested
+          resources:
+            requests:
+              memory: 3Gi  # 3Gi memory as requested
+              cpu: 200m
+            limits:

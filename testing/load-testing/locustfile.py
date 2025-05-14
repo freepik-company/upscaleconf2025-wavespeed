@@ -27,5 +27,6 @@ class CeleryTaskUser(HttpUser):
         
         if response.status_code == 200:
             task_id = response.json().get("task_id")
-            if task_id:
-                self.client.get(f"/tasks/{task_id}") 
+            print(f"Task ID: {task_id}")
+        else:
+            print(f"Failed to submit task: {response.status_code}")

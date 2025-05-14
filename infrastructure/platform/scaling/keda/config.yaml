@@ -1,0 +1,11 @@
+  # KEDA - Kubernetes Event-driven Autoscaling
+  - name: keda
+    namespace: keda
+    chart: kedacore/keda
+    version: "2.12.1"
+    labels:
+      category: scaffolding
+  
+  # Redis - In-memory data store for caching and message broker
+  - name: redis
+    namespace: workshop
