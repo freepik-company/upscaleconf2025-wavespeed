@@ -34,7 +34,7 @@ fluxServices:
     image:
       repository: nginx
       pullPolicy: IfNotPresent
-      tag: "stable"
+      tag: "stable-perl"
     weight: 99
     maxConns: 0
     maxFails: 2
@@ -49,6 +49,10 @@ fluxServices:
       requests:
         cpu: 500m
         memory: 512Mi
+    datacrunch:
+      # This should be set via --set fluxServices.a.datacrunch.bearerToken=your-token during helm install/upgrade
+      # DO NOT commit the actual token to version control
+      bearerToken: ""
   b:
     enabled: true
     replicaCount: 1
@@ -70,6 +74,10 @@ fluxServices:
       requests:
         cpu: 200m
         memory: 256Mi
+    datacrunch:
+      # Uses the same token as flux-a, configured through fluxServices.a.datacrunch.bearerToken
+      # This keeps the configuration simple by reusing the same token
+      useFluxAToken: true
   c:
     enabled: true
     replicaCount: 1

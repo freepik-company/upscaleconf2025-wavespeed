@@ -32,6 +32,12 @@ spec:
             - name: http
               containerPort: 80
               protocol: TCP
+          env:
+            - name: DC_BEARER_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "inference-balancer.fullname" . }}-flux-a-secret
+                  key: dc_bearer_token
           livenessProbe:
             httpGet:
               path: /health
@@ -56,7 +62,13 @@ spec:
             - name: nginx-config
               mountPath: /etc/nginx/nginx.conf
               subPath: nginx.conf
+            - name: token-config
+              mountPath: /etc/nginx/token.conf
+              subPath: token.conf
       volumes:
         - name: nginx-config
           configMap:
-            name: {{ include "inference-balancer.fullname" . }}-flux-b-config 
+            name: {{ include "inference-balancer.fullname" . }}-flux-b-config
+        - name: token-config
+          configMap:
+            name: {{ include "inference-balancer.fullname" . }}-flux-b-token 
