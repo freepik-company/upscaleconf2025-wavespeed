@@ -27,6 +27,12 @@ help:
 	@echo "  make loadtest-ui           - Access Load Test UI (http://localhost:8089)"
 	@echo "  make frontend-ui           - Access Visualization UI (http://localhost:8080) with WebSocket support"
 	@echo ""
+	@echo "Setting up DataCrunch API Token:"
+	@echo "  For Flux Service A proxy to work, you need to set the DataCrunch bearer token using one of:"
+	@echo "  - Environment variable: export DC_BEARER_TOKEN=your-token"
+	@echo "  - .env file in the project root with DC_BEARER_TOKEN=your-token"
+	@echo "  - Copy the template file: cp .env.dist .env and edit with your token"
+	@echo ""
 	@echo "For more detailed commands, see Makefile.original"
 
 # Check dependencies
@@ -125,7 +131,22 @@ deploy-app: check-dependencies
 # Deploy balancer
 deploy-balancer: check-dependencies
 	@echo "Deploying inference balancer..."
-	@helm upgrade --install inference-balancer infrastructure/services/balancer/helm -n inference-balancer --wait
+	@if [ -z "$$DC_BEARER_TOKEN" ] && [ -f .env ]; then \
+		echo "Loading DC_BEARER_TOKEN from .env file..."; \
+		export $$(grep -v '^#' .env | grep DC_BEARER_TOKEN); \
+	fi; \
+	if [ -z "$$DC_BEARER_TOKEN" ]; then \
+		echo "Warning: DC_BEARER_TOKEN not set. The DataCrunch API proxy will not work correctly."; \
+		echo "Please set the token using:"; \
+		echo "  - Environment variable: export DC_BEARER_TOKEN=your-token"; \
+		echo "  - .env file with DC_BEARER_TOKEN=your-token"; \
+		helm upgrade --install inference-balancer infrastructure/services/balancer/helm -n inference-balancer --wait; \
+	else \
+		echo "Using DataCrunch bearer token from environment..."; \
+		helm upgrade --install inference-balancer infrastructure/services/balancer/helm \
+			--set fluxServices.a.datacrunch.bearerToken="$$DC_BEARER_TOKEN" \
+			-n inference-balancer --wait; \
+	fi
 	@echo "Inference balancer deployed successfully."
 	@echo "Next step: run load test with 'make run-loadtest'"
 
@@ -163,6 +184,8 @@ run-loadtest: check-dependencies
 # Complete workshop workflow in one step
 start-workshop: setup-cluster deploy-services deploy-app deploy-balancer deploy-webhook deploy-frontend
 	@echo "Workshop environment is fully set up!"
+	@echo "Note: For the DataCrunch API proxy to work correctly, make sure DC_BEARER_TOKEN is set"
+	@echo "      via environment variable or .env file before running deploy-balancer."
 	@echo "Next step: run load test with 'make run-loadtest'"
 	@echo "To view all UIs: make show-ui"
 
