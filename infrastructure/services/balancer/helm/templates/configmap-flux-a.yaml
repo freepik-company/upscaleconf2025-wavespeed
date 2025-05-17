@@ -41,8 +41,21 @@ data:
             server_name _;
 
             location / {
-                add_header Content-Type text/plain;
-                return 200 "This is Flux Service A\n";
+                proxy_pass https://inference.datacrunch.io/fp-flux-dev-fast/runsync;
+                proxy_set_header Host inference.datacrunch.io;
+                proxy_set_header Content-Type application/json;
+                
+                # Authorization token loaded from config file
+                include /etc/nginx/token.conf;
+                
+                # Allow POST method and pass the request body
+                proxy_method POST;
+                proxy_pass_request_body on;
+                
+                proxy_ssl_server_name on;
+                proxy_buffer_size 128k;
+                proxy_buffers 4 256k;
+                proxy_busy_buffers_size 256k;
             }
 
             # Health check endpoint

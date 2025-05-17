@@ -16,13 +16,47 @@ class WebhookRequest(BaseModel):
     seed: Optional[int] = None
 
 class WebsocketRequest(BaseModel):
-    websocket_url: str
+    websocket_url: Optional[str] = None
+    prompt: Optional[str] = None
+    seed: Optional[int] = None
+    
+class DataCrunchInput(BaseModel):
+    prompt: str
+    seed: Optional[int] = None
+    
+class DataCrunchRequest(BaseModel):
+    input: DataCrunchInput
 
 @app.post("/flux", response_model=TaskResponse)
-async def submit_flux_task():
-    """Submit a flux task to test the inference-balancer."""
+async def submit_flux_task(request: Optional[DataCrunchRequest] = None):
+    """Submit a flux task to test the inference-balancer.
+    
+    Can accept a DataCrunch-style payload with input.prompt format.
+    If no payload is provided, a default prompt will be used.
+    """
     try:
-        task = flux.delay()
+        if request and request.input and request.input.prompt:
+            # If we have a DataCrunch format payload, use it
+            prompt = request.input.prompt
+            seed = request.input.seed if hasattr(request.input, 'seed') else None
+            task = websocket_flux.delay(prompt=prompt, seed=seed)
+        else:
+            # Otherwise use the default task
+            task = flux.delay()
+        return TaskResponse(task_id=task.id)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to submit task: {str(e)}")
+
+@app.post("/datacrunch_flux", response_model=TaskResponse)
+async def submit_datacrunch_flux_task(request: DataCrunchRequest):
+    """Submit a flux task with DataCrunch API format."""
+    try:
+        # Extract prompt and seed from the DataCrunch format
+        prompt = request.input.prompt
+        seed = request.input.seed
+        
+        # Call the websocket_flux task which will forward to the websocket endpoint
+        task = websocket_flux.delay(prompt=prompt, seed=seed)
         return TaskResponse(task_id=task.id)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to submit task: {str(e)}")
@@ -97,8 +131,12 @@ async def submit_websocket_task(
                 detail=f"Task for inference model '{inference_model}' not found"
             )
             
-        # Execute the task
-        celery_task = task.delay(request.websocket_url)
+        # Execute the task with all parameters
+        celery_task = task.delay(
+            websocket_url=request.websocket_url,
+            prompt=request.prompt,
+            seed=request.seed
+        )
         return TaskResponse(task_id=celery_task.id)
     except HTTPException:
         raise
