@@ -17,40 +17,16 @@
         
         <main>
             <div class="grid-container" id="image-grid">
-                <!-- 10 preview cells will be dynamically created by JavaScript -->
-            </div>
-            
-            <div class="description">
-                <p>Displaying the 10 most recent inference results. New results will cycle through these preview slots.</p>
+                <!-- 8 preview cells will be dynamically created by JavaScript -->
             </div>
         </main>
         
-        <aside class="sidebar">
-            <div class="stats-panel">
-                <h2>Statistics</h2>
-                <div class="stat-item">
-                    <span class="stat-label">Images Received:</span>
-                    <span id="images-received">0</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-label">Current Position:</span>
-                    <span id="current-position">0</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-label">Last Update:</span>
-                    <span id="last-update">Never</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-label">Connection Attempts:</span>
-                    <span id="connection-attempts">0</span>
-                </div>
+        <footer>
+            <div class="stats-counter">
+                <span class="stat-label">Images Received:</span>
+                <span id="images-received">0</span>
             </div>
-            
-            <div class="connection-info">
-                <h2>Connection Info</h2>
-                <pre id="websocket-url">ws://...</pre>
-            </div>
-        </aside>
+        </footer>
     </div>
     
     <script src="app.js"></script>

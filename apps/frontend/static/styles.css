@@ -7,18 +7,19 @@
 
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-    background-color: #f5f5f7;
-    color: #333;
+    background-color: #000000;
+    color: #ffffff;
     line-height: 1.6;
 }
 
 .container {
     display: grid;
-    grid-template-columns: 1fr 300px;
-    grid-template-rows: auto 1fr;
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr auto;
     grid-template-areas:
-        "header header"
-        "main sidebar";
+        "header"
+        "main"
+        "footer";
     min-height: 100vh;
     max-width: 1600px;
     margin: 0 auto;
@@ -32,22 +33,41 @@ header {
     justify-content: space-between;
     align-items: center;
     padding-bottom: 20px;
-    border-bottom: 1px solid #ddd;
+    border-bottom: 1px solid #333;
 }
 
 main {
     grid-area: main;
     padding: 20px;
-    background-color: #fff;
+    background-color: #000000;
     border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
-.sidebar {
-    grid-area: sidebar;
+footer {
+    grid-area: footer;
+    background-color: #000000;
+    border-radius: 8px;
+    padding: 15px 20px;
     display: flex;
-    flex-direction: column;
-    gap: 20px;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.stats-counter {
+    font-size: 18px;
+    font-weight: 500;
+}
+
+.stats-counter .stat-label {
+    margin-right: 8px;
+    color: #aaa;
+}
+
+#images-received {
+    font-weight: 700;
+    color: #4dabf7;
 }
 
 /* Connection Status */
@@ -59,37 +79,37 @@ main {
 }
 
 .status-connecting {
-    background-color: #fff3cd;
-    color: #856404;
-    border: 1px solid #ffeeba;
+    background-color: #2e2c1b;
+    color: #ffd866;
+    border: 1px solid #4d432e;
 }
 
 .status-connected {
-    background-color: #d4edda;
-    color: #155724;
-    border: 1px solid #c3e6cb;
+    background-color: #1f3329;
+    color: #6de379;
+    border: 1px solid #2c5236;
 }
 
 .status-error {
-    background-color: #f8d7da;
-    color: #721c24;
-    border: 1px solid #f5c6cb;
+    background-color: #3a1c1f;
+    color: #ff7285;
+    border: 1px solid #542a2e;
 }
 
 /* Grid Styles */
 .grid-container {
     display: grid;
-    grid-template-columns: repeat(10, 1fr);
-    grid-template-rows: 1fr;
-    gap: 10px;
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+    gap: 16px;
     width: 100%;
     height: auto;
-    min-height: 120px;
+    min-height: 480px;
     margin-bottom: 30px;
 }
 
 .grid-cell {
-    background-color: #f0f0f0;
+    background-color: #121212;
     border-radius: 8px;
     display: flex;
     align-items: center;
@@ -97,15 +117,78 @@ main {
     overflow: hidden;
     position: relative;
     aspect-ratio: 1/1;
-    min-height: 100px;
-    border: 1px solid #ddd;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    min-height: 180px;
+    border: none;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.grid-cell:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
 }
 
 .grid-cell img {
     max-width: 100%;
     max-height: 100%;
-    object-fit: contain;
+    object-fit: cover;
+    width: 100%;
+    height: 100%;
+}
+
+.image-caption {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background-color: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 8px 10px;
+    font-size: 12px;
+    text-align: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.grid-cell:hover .image-caption {
+    opacity: 1;
+}
+
+.image-caption a {
+    color: white;
+    text-decoration: underline;
+    transition: color 0.2s ease;
+}
+
+.image-caption a:hover {
+    color: #4dabf7;
+}
+
+.error-image {
+    background-color: #3a1c1f;
+    color: #ff7285;
+    padding: 10px;
+    text-align: center;
+    font-size: 12px;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Image loading animations */
+@keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+.image-loaded {
+    animation: fadeIn 0.8s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .empty-cell {
@@ -113,7 +196,17 @@ main {
     align-items: center;
     justify-content: center;
     font-size: 24px;
-    color: #ccc;
+    color: #333;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #0f0f0f 25%, #161616 50%, #0f0f0f 75%);
+    background-size: 400% 400%;
+    animation: shimmer 2s ease infinite;
+}
+
+@keyframes shimmer {
+    0% { background-position: 0% 0%; }
+    100% { background-position: 100% 100%; }
 }
 
 /* Stats Panel */
@@ -157,29 +250,44 @@ main {
 .description {
     margin-top: 20px;
     padding: 15px;
-    background-color: #f7f9fc;
+    background-color: #252525;
     border-radius: 8px;
-    border-left: 4px solid #4a90e2;
+    border-left: 4px solid #4dabf7;
 }
 
 .description p {
     margin: 0;
-    color: #555;
+    color: #ccc;
     font-size: 15px;
     line-height: 1.5;
 }
 
 /* Responsive adjustments */
+@media (max-width: 1200px) {
+    .grid-container {
+        grid-template-columns: repeat(3, 1fr);
+        grid-template-rows: repeat(3, 1fr);
+    }
+}
+
 @media (max-width: 768px) {
     .container {
-        grid-template-columns: 1fr;
-        grid-template-areas:
-            "header"
-            "main"
-            "sidebar";
+        gap: 15px;
     }
     
-    .sidebar {
-        margin-top: 20px;
+    .grid-container {
+        grid-template-columns: repeat(2, 1fr);
+        grid-template-rows: repeat(4, 1fr);
+    }
+    
+    .stats-counter {
+        font-size: 16px;
+    }
+}
+
+@media (max-width: 480px) {
+    .grid-container {
+        grid-template-columns: 1fr;
+        grid-template-rows: repeat(8, 1fr);
     }
 } 

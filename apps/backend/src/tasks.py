@@ -13,7 +13,19 @@ def flux(self):
     """Task that makes a request to the inference-balancer endpoint."""
     logger.info(f"Task ID: {self.request.id} - Sending request to inference-balancer")
     try:
-        response = requests.get("http://inference-balancer-main.inference-balancer.svc.cluster.local:80/flux")
+        # Create a payload with the car prompt for DataCrunch API
+        payload = {
+            "input": {
+                "prompt": "A car"
+            }
+        }
+        
+        # Use POST with the payload instead of GET
+        response = requests.post(
+            "http://inference-balancer-main.inference-balancer.svc.cluster.local:80/flux",
+            headers={"Content-Type": "application/json"},
+            data=json.dumps(payload)
+        )
         status_code = response.status_code
         response_text = response.text
         logger.info(f"Task ID: {self.request.id} - Got response: {status_code}, content: {response_text}")
@@ -47,13 +59,24 @@ def webhook_flux(self, webhook_url=None, prompt=None, seed=None):
         if seed is not None:
             payload["seed"] = seed
             
+        # Special handling for input.prompt format required by DataCrunch API
+        datacrunch_payload = {}
+        if "prompt" in payload:
+            datacrunch_payload = {
+                "input": {
+                    "prompt": payload["prompt"]
+                }
+            }
+            if "seed" in payload:
+                datacrunch_payload["input"]["seed"] = payload["seed"]
+        
         # Call the inference balancer
         if payload:
-            logger.info(f"Task ID: {self.request.id} - Sending payload: {payload}")
+            logger.info(f"Task ID: {self.request.id} - Sending payload: {datacrunch_payload or payload}")
             response = requests.post(
                 "http://inference-balancer-main.inference-balancer.svc.cluster.local:80/flux",
                 headers={"Content-Type": "application/json"},
-                data=json.dumps(payload)
+                data=json.dumps(datacrunch_payload or payload)
             )
         else:
             response = requests.get("http://inference-balancer-main.inference-balancer.svc.cluster.local:80/flux")
@@ -118,13 +141,24 @@ def websocket_flux(self, websocket_url=None, prompt=None, seed=None):
         if seed is not None:
             payload["seed"] = seed
             
+        # Special handling for input.prompt format required by DataCrunch API
+        datacrunch_payload = {}
+        if "prompt" in payload:
+            datacrunch_payload = {
+                "input": {
+                    "prompt": payload["prompt"]
+                }
+            }
+            if "seed" in payload:
+                datacrunch_payload["input"]["seed"] = payload["seed"]
+        
         # Call the inference balancer
         if payload:
-            logger.info(f"Task ID: {self.request.id} - Sending payload: {payload}")
+            logger.info(f"Task ID: {self.request.id} - Sending payload: {datacrunch_payload or payload}")
             response = requests.post(
                 "http://inference-balancer-main.inference-balancer.svc.cluster.local:80/flux",
                 headers={"Content-Type": "application/json"},
-                data=json.dumps(payload)
+                data=json.dumps(datacrunch_payload or payload)
             )
         else:
             response = requests.get("http://inference-balancer-main.inference-balancer.svc.cluster.local:80/flux")
@@ -133,12 +167,38 @@ def websocket_flux(self, websocket_url=None, prompt=None, seed=None):
         response_text = response.text
         logger.info(f"Task ID: {self.request.id} - Got response: {status_code}, content: {response_text}")
         
-        # Prepare the payload for the websocket
-        websocket_payload = {
-            "task_id": self.request.id,
-            "status_code": status_code,
-            "response": response_text
-        }
+        # Parse the DataCrunch API response to extract the image URL
+        try:
+            datacrunch_response = json.loads(response_text)
+            # Extract image URL from the response
+            image_url = None
+            if datacrunch_response.get('output') and datacrunch_response['output'].get('outputs'):
+                image_url = datacrunch_response['output']['outputs'][0]
+                
+            # Enhance the response with the image URL
+            enhanced_response = {
+                "status": datacrunch_response.get('status', 'UNKNOWN'),
+                "id": datacrunch_response.get('id', ''),
+                "image_url": image_url,  # Direct reference to image URL
+                "seed": datacrunch_response.get('output', {}).get('seed', None),
+                "has_nsfw": datacrunch_response.get('output', {}).get('has_nsfw_contents', [False])[0]
+            }
+            
+            # Prepare the payload for the websocket
+            websocket_payload = {
+                "task_id": self.request.id,
+                "status_code": status_code,
+                "response": enhanced_response,
+                "original_response": datacrunch_response
+            }
+        except json.JSONDecodeError:
+            logger.warning(f"Task ID: {self.request.id} - Could not parse response as JSON: {response_text}")
+            # If we can't parse the response, just send it as-is
+            websocket_payload = {
+                "task_id": self.request.id,
+                "status_code": status_code,
+                "response": response_text
+            }
         
         # Include original request in the websocket payload
         if prompt is not None:
