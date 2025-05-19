@@ -6,7 +6,6 @@ This document provides an overview of the Freepik WaveSpeed system architecture,
 
 Freepik WaveSpeed is designed as a scalable, distributed system for processing high-volume image transformation requests, with the following key components:
 
-![Freepik WaveSpeed Architecture](./images/architecture-overview.png)
 
 ## Core Components
 

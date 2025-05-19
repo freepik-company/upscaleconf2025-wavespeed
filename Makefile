@@ -174,27 +174,6 @@ deploy-app: check-dependencies
 	@echo "Celery application deployed successfully."
 	@echo "Next step: deploy balancer with 'make deploy-balancer'"
 
-# Deploy balancer
-# deploy-balancer: check-dependencies
-# 	@echo "Deploying inference balancer..."
-# 	@if [ -z "$$DC_BEARER_TOKEN" ] && [ -f .env ]; then \
-# 		echo "Loading DC_BEARER_TOKEN from .env file..."; \
-# 		export $$(grep -v '^#' .env | grep DC_BEARER_TOKEN); \
-# 	fi; \
-# 	if [ -z "$$DC_BEARER_TOKEN" ]; then \
-# 		echo "Warning: DC_BEARER_TOKEN not set. The DataCrunch API proxy will not work correctly."; \
-# 		echo "Please set the token using:"; \
-# 		echo "  - Environment variable: export DC_BEARER_TOKEN=your-token"; \
-# 		echo "  - .env file with DC_BEARER_TOKEN=your-token"; \
-# 		helm upgrade --install inference-balancer infrastructure/services/inference-balancer -n inference-balancer --wait; \
-# 	else \
-# 		echo "Using DataCrunch bearer token from environment..."; \
-# 		helm upgrade --install inference-balancer infrastructure/services/inference-balancer \
-# 			--set datacrunch.bearerToken="$$DC_BEARER_TOKEN" \
-# 			-n inference-balancer --wait; \
-# 	fi
-# 	@echo "Inference balancer deployed successfully."
-# 	@echo "Next step: run load test with 'make run-loadtest'"
 
 # Deploy webhook service
 deploy-webhook: check-dependencies
@@ -315,7 +294,6 @@ istio-verify:
 		echo "2. Run 'make restart-inference-balancer' to restart deployments with sidecars"; \
 	fi
 
-# Restart inference-balancer deployments to ensure sidecar injection
 
 # Ensure istio-injection label is added to the namespace
 enable-istio-injection:
