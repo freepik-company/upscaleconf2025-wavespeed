@@ -41,7 +41,7 @@ data:
 
             # Proxy to DataCrunch API
             location /flux {
-                proxy_pass https://inference.datacrunch.io/fp-flux-dev-fast/runsync;
+                proxy_pass https://inference.datacrunch.io/fp-flux-dev-ultra/runsync;
                 proxy_set_header Host inference.datacrunch.io;
                 proxy_set_header Content-Type application/json;
                 

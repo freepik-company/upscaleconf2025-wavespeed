@@ -228,7 +228,7 @@ run-loadtest: check-dependencies
 	@echo "To monitor the system: make grafana-ui"
 
 # Complete workshop workflow in one step
-start-workshop: setup-cluster import-public-images deploy-services deploy-app deploy-balancer deploy-webhook deploy-frontend
+start-workshop: setup-cluster import-public-images deploy-services deploy-app istio-verify enable-istio-injection deploy-inference-balancer deploy-webhook deploy-frontend
 	@echo "Workshop environment is fully set up!"
 	@echo "Note: For the DataCrunch API proxy to work correctly, make sure DC_BEARER_TOKEN is set"
 	@echo "      via environment variable or .env file before running deploy-balancer."
