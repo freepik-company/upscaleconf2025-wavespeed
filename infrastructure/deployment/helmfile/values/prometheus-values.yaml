@@ -62,6 +62,19 @@ serviceMonitors:
       - port: metrics
         interval: 10s
         path: /metrics
+        
+  # Istio monitoring
+  - name: istio-component-monitor
+    enabled: true
+    selector:
+      matchExpressions:
+        - {key: istio, operator: In, values: [pilot]}
+    namespaceSelector:
+      matchNames:
+        - istio-system
+    endpoints:
+      - port: http-monitoring
+        interval: 15s
 
 ## Additional scrape configs for Redis metrics
 extraScrapeConfigs: |
@@ -138,6 +151,53 @@ extraScrapeConfigs: |
         target_label: component
       - source_labels: [__meta_kubernetes_pod_label_app_kubernetes_io_instance]
         target_label: instance
+        
+  # Istio Envoy Sidecar metrics for inference-balancer
+  - job_name: 'istio-proxy-inference-balancer'
+    scrape_interval: 10s
+    metrics_path: /stats/prometheus
+    kubernetes_sd_configs:
+      - role: pod
+        namespaces:
+          names:
+            - inference-balancer
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_pod_container_name]
+        regex: istio-proxy
+        action: keep
+      - source_labels: [__meta_kubernetes_pod_name]
+        action: replace
+        target_label: pod_name
+      - source_labels: [__meta_kubernetes_namespace]
+        action: replace
+        target_label: namespace
+      - source_labels: [__meta_kubernetes_pod_label_app]
+        action: replace
+        target_label: app
+      - source_labels: [__meta_kubernetes_pod_name]
+        action: replace
+        regex: (.*)
+        target_label: instance
+
+  # Istio control plane metrics
+  - job_name: 'istio-telemetry'
+    scrape_interval: 15s
+    scheme: http
+    kubernetes_sd_configs:
+      - role: pod
+        namespaces:
+          names:
+            - istio-system
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_pod_label_istio]
+        regex: pilot
+        action: keep
+      - source_labels: [__meta_kubernetes_pod_name]
+        action: replace
+        target_label: pod_name
+      - source_labels: [__meta_kubernetes_namespace]
+        action: replace
+        target_label: namespace
 
 ## Prometheus alerting rules
 serverFiles:
@@ -179,4 +239,23 @@ serverFiles:
               severity: warning
             annotations:
               summary: "NGINX high connection count"
-              description: "NGINX instance {{ $labels.instance }} has high active connections ({{ $value }})" 
+              description: "NGINX instance {{ $labels.instance }} has high active connections ({{ $value }})"
+              
+      - name: istio-alerts
+        rules:
+          - alert: IstioHighRequestLatency
+            expr: istio_request_duration_milliseconds_sum{app="inference-balancer"} / istio_request_duration_milliseconds_count{app="inference-balancer"} > 500
+            for: 1m
+            labels:
+              severity: warning
+            annotations:
+              summary: "High request latency on {{ $labels.destination_service }}"
+              description: "Request latency for destination {{ $labels.destination_service }} is {{ $value }}ms"
+          - alert: IstioHighErrorRate
+            expr: rate(istio_requests_total{reporter="destination", response_code=~"5.*", destination_service=~".*inference-balancer.*"}[5m]) / rate(istio_requests_total{reporter="destination", destination_service=~".*inference-balancer.*"}[5m]) * 100 > 5
+            for: 1m
+            labels:
+              severity: warning
+            annotations:
+              summary: "High error rate for {{ $labels.destination_service }}"
+              description: "Error rate for {{ $labels.destination_service }} is {{ $value }}%" 

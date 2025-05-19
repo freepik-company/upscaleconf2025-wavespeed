@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "inference-balancer.fullname" . }}-proxy-b
+  labels:
+    {{- include "inference-balancer.labels" . | nindent 4 }}
+    app.kubernetes.io/component: proxy-b
+spec:
+  type: {{ .Values.proxyB.service.type | default "ClusterIP" }}
+  ports:
+    - port: {{ .Values.proxyB.service.port | default 80 }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "inference-balancer.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: proxy-b 

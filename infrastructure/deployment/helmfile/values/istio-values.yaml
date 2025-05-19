@@ -1,0 +1,58 @@
+# Istio configuration for Wave Speed Conference workshop
+# Focus on metrics collection for inference-balancer
+
+global:
+  # Enable Istio mTLS
+  mtls:
+    enabled: true
+  
+  # Configure Prometheus metrics
+  telemetry:
+    enabled: true
+    v2:
+      enabled: true
+      prometheus:
+        enabled: true
+        
+  # Configure Istio proxy
+  proxy:
+    tracer: zipkin
+    accessLogFile: "/dev/stdout"
+    accessLogFormat: ""
+    accessLogEncoding: "JSON"
+    componentLogLevel: "misc:debug"
+    logLevel: info
+    
+# Enable Auto-injection of sidecars for inference-balancer namespace
+sidecarInjectorWebhook:
+  enabled: true
+  enableNamespacesByDefault: false
+  namespaceSelector:
+    matchExpressions:
+    - key: istio-injection
+      operator: In
+      values:
+      - enabled
+
+# Tracing configuration
+tracing:
+  enabled: true
+  zipkin:
+    address: zipkin.istio-system:9411
+
+# Prometheus configuration for metrics
+prometheus:
+  enabled: true
+  createPrometheusResource: false  # We already have Prometheus installed
+  
+# Kiali dashboard
+kiali:
+  enabled: false  # Can be enabled if you want a dedicated Istio dashboard
+
+pilot:
+  autoscaleMin: 1
+  autoscaleMax: 1
+  resources:
+    requests:
+      cpu: 500m
+      memory: 2048Mi 
