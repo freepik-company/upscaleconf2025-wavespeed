@@ -11,6 +11,8 @@ repositories:
     url: https://grafana.github.io/helm-charts
   - name: kedacore
     url: https://kedacore.github.io/charts
+  - name: istio
+    url: https://istio-release.storage.googleapis.com/charts
 
 # Define environment-specific values
 environments:
@@ -32,6 +34,26 @@ helmDefaults:
 
 # Helm releases
 releases:
+  # Istio base - CRDs and cluster-wide resources
+  - name: istio-base
+    namespace: istio-system
+    chart: istio/base
+    version: "1.20.1"
+    labels:
+      category: scaffolding
+    
+  # Istio control plane
+  - name: istiod
+    namespace: istio-system
+    chart: istio/istiod
+    version: "1.20.1"
+    labels:
+      category: scaffolding
+    needs:
+      - istio-system/istio-base
+    values:
+      - values/istio-values.yaml
+
   # KEDA - Kubernetes Event-driven Autoscaling
   - name: keda
     namespace: keda

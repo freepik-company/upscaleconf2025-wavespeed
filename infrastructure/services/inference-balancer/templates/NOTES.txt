@@ -1,20 +1,3 @@
-Thank you for installing {{ .Chart.Name }}.
-
-The inference-balancer system has been deployed in the {{ .Values.namespace }} namespace.
-
-The main load balancer is available at:
-  http://{{ include "inference-balancer.fullname" . }}-main.{{ .Values.namespace }}.svc.cluster.local:{{ .Values.mainLoadBalancer.service.port }}/flux
-
-This load balancer routes traffic to three services with the following weights:
-- Flux Service A: {{ .Values.fluxServices.a.weight }}% of traffic
-- Flux Service B: {{ .Values.fluxServices.b.weight }}% of traffic
-- Flux Service C: {{ .Values.fluxServices.c.weight }}% of traffic{{ if .Values.fluxServices.c.down }} (currently down){{ end }}
-
-You can access each service directly for testing:
-- Flux Service A: http://flux-svc-a.{{ .Values.namespace }}.svc.cluster.local:{{ .Values.fluxServices.a.service.port }}
-- Flux Service B: http://flux-svc-b.{{ .Values.namespace }}.svc.cluster.local:{{ .Values.fluxServices.b.service.port }}
-- Flux Service C: http://flux-svc-c.{{ .Values.namespace }}.svc.cluster.local:{{ .Values.fluxServices.c.service.port }}
-
 1. Get the application URL by running these commands:
 {{- if .Values.ingress.enabled }}
 {{- range $host := .Values.ingress.hosts }}

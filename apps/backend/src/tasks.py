@@ -156,12 +156,12 @@ def websocket_flux(self, websocket_url=None, prompt=None, seed=None):
         if payload:
             logger.info(f"Task ID: {self.request.id} - Sending payload: {datacrunch_payload or payload}")
             response = requests.post(
-                "http://inference-balancer-main.inference-balancer.svc.cluster.local:80/flux",
+                "http://inference-balancer.inference-balancer.svc.cluster.local/flux",
                 headers={"Content-Type": "application/json"},
                 data=json.dumps(datacrunch_payload or payload)
             )
         else:
-            response = requests.get("http://inference-balancer-main.inference-balancer.svc.cluster.local:80/flux")
+            response = requests.get("http://inference-balancer.inference-balancer.svc.cluster.local/flux")
             
         status_code = response.status_code
         response_text = response.text

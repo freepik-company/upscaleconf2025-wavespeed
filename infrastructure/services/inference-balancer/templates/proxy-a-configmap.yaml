@@ -1,0 +1,71 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "inference-balancer.fullname" . }}-proxy-a-config
+  labels:
+    {{- include "inference-balancer.labels" . | nindent 4 }}
+    app.kubernetes.io/component: proxy-a
+data:
+  nginx.conf: |
+    user  nginx;
+    worker_processes  auto;
+
+    error_log  /var/log/nginx/error.log notice;
+    pid        /var/run/nginx.pid;
+
+    events {
+        worker_connections  1024;
+    }
+
+    http {
+        include       /etc/nginx/mime.types;
+        default_type  application/octet-stream;
+
+        log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
+                          '$status $body_bytes_sent "$http_referer" '
+                          '"$http_user_agent" "$http_x_forwarded_for"';
+
+        access_log  /var/log/nginx/access.log  main;
+
+        sendfile        on;
+        keepalive_timeout  65;
+
+        server {
+            listen       80;
+            server_name  localhost;
+
+            location / {
+                root   /usr/share/nginx/html;
+                index  index.html index.htm;
+            }
+
+            # Proxy to DataCrunch API
+            location /flux {
+                proxy_pass https://inference.datacrunch.io/fp-flux-dev-fast/runsync;
+                proxy_set_header Host inference.datacrunch.io;
+                proxy_set_header Content-Type application/json;
+                
+                # Authorization token
+                proxy_set_header Authorization "Bearer {{ .Values.datacrunch.bearerToken | default "" }}";
+                
+                # Allow POST method and pass the request body
+                proxy_method POST;
+                proxy_pass_request_body on;
+                
+                proxy_ssl_server_name on;
+                proxy_buffer_size 128k;
+                proxy_buffers 4 256k;
+                proxy_busy_buffers_size 256k;
+            }
+
+            # Health check endpoint
+            location /health {
+                return 200;
+            }
+
+            error_page   500 502 503 504  /50x.html;
+            location = /50x.html {
+                root   /usr/share/nginx/html;
+            }
+        }
+    } 

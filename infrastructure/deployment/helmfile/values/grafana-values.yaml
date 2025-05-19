@@ -72,7 +72,7 @@ dashboardProviders:
         options:
           path: /var/lib/grafana/dashboards/default
 
-# Import Redis dashboards
+# Import dashboards
 dashboards:
   default:
     redis:
@@ -84,6 +84,29 @@ dashboards:
     #   gnetId: 17509
     #   revision: 7
     #   datasource: Prometheus
+    
+    # Istio Dashboards
+    istio-mesh:
+      gnetId: 7639  # Official Istio Mesh Dashboard
+      revision: 1
+      datasource: Prometheus
+    istio-service:
+      gnetId: 7636  # Official Istio Service Dashboard
+      revision: 1
+      datasource: Prometheus
+    istio-workload:
+      gnetId: 7630  # Official Istio Workload Dashboard
+      revision: 1
+      datasource: Prometheus
+    istio-performance:
+      gnetId: 11829  # Istio Performance Dashboard
+      revision: 1
+      datasource: Prometheus
+    # Inference Balancer custom dashboard
+    inference-balancer:
+      url: https://raw.githubusercontent.com/grafana/grafana/master/public/app/plugins/datasource/prometheus/dashboards/nginx.json
+      datasource: Prometheus
+      
     # Custom Celery Dashboard
     celery-overview:
       json: |
