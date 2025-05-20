@@ -14,15 +14,24 @@ class WebhookRequest(BaseModel):
     webhook_url: Optional[str] = None
     prompt: Optional[str] = None
     seed: Optional[int] = None
+    enable_base64_output: Optional[bool] = None
+    cache_threshold: Optional[float] = None
+    size: Optional[str] = None
 
 class WebsocketRequest(BaseModel):
     websocket_url: Optional[str] = None
     prompt: Optional[str] = None
     seed: Optional[int] = None
+    enable_base64_output: Optional[bool] = None
+    cache_threshold: Optional[float] = None
+    size: Optional[str] = None
     
 class DataCrunchInput(BaseModel):
     prompt: str
     seed: Optional[int] = None
+    enable_base64_output: Optional[bool] = None
+    cache_threshold: Optional[float] = None
+    size: Optional[str] = None
     
 class DataCrunchRequest(BaseModel):
     input: DataCrunchInput
@@ -39,7 +48,7 @@ async def submit_flux_task(request: Optional[DataCrunchRequest] = None):
             # If we have a DataCrunch format payload, use it
             prompt = request.input.prompt
             seed = request.input.seed if hasattr(request.input, 'seed') else None
-            task = websocket_flux.delay(prompt=prompt, seed=seed)
+            task = websocket_flux.delay(prompt=prompt, seed=seed, enable_base64_output=request.input.enable_base64_output, cache_threshold=request.input.cache_threshold, size=request.input.size)
         else:
             # Otherwise use the default task
             task = flux.delay()
@@ -56,7 +65,7 @@ async def submit_datacrunch_flux_task(request: DataCrunchRequest):
         seed = request.input.seed
         
         # Call the websocket_flux task which will forward to the websocket endpoint
-        task = websocket_flux.delay(prompt=prompt, seed=seed)
+        task = websocket_flux.delay(prompt=prompt, seed=seed, enable_base64_output=request.input.enable_base64_output, cache_threshold=request.input.cache_threshold, size=request.input.size)
         return TaskResponse(task_id=task.id)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to submit task: {str(e)}")
@@ -94,7 +103,10 @@ async def submit_webhook_task(
         celery_task = task.delay(
             webhook_url=request.webhook_url,
             prompt=request.prompt,
-            seed=request.seed
+            seed=request.seed,
+            enable_base64_output=request.enable_base64_output,
+            cache_threshold=request.cache_threshold,
+            size=request.size
         )
         return TaskResponse(task_id=celery_task.id)
     except HTTPException:
@@ -135,7 +147,10 @@ async def submit_websocket_task(
         celery_task = task.delay(
             websocket_url=request.websocket_url,
             prompt=request.prompt,
-            seed=request.seed
+            seed=request.seed,
+            enable_base64_output=request.enable_base64_output,
+            cache_threshold=request.cache_threshold,
+            size=request.size
         )
         return TaskResponse(task_id=celery_task.id)
     except HTTPException:

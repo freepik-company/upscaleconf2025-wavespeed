@@ -18,7 +18,8 @@ const state = {
     connectionAttempts: 0,
     socket: null,
     totalImagesReceived: 0,
-    currentWsUrlIndex: 0
+    currentWsUrlIndex: 0,
+    usedCells: Array(config.gridSize).fill(false) // Track which cells have been used
 };
 
 // DOM elements cache
@@ -67,92 +68,54 @@ function updateUI() {
 // Handle received messages
 function handleMessage(event) {
     try {
-        const data = JSON.parse(event.data);
-        console.log('Received message:', data);
-        
-        // Check for image data in various formats
-        if (data.response) {
-            // Check for enhanced response with image_url
-            if (data.response.image_url) {
-                console.log('Found image URL in enhanced response:', data.response.image_url);
-                displayImageFromUrl(data.response.image_url);
-                return;
-            }
+        const data = JSON.parse(event.data);        
+        // We expect base64 image data at data.response.image_url
+        if (data.response && data.response.image_url) {
+            // Get the base64 image data
+            const imageData = data.response.image_url;
+            console.log('Found base64 image in response.image_url');
             
-            // Check for base64 image data
-            if (data.response.image || (typeof data.response === 'object' && data.response.image)) {
-                let imageData;
-                
-                // Extract image data from the response
-                if (typeof data.response === 'string') {
-                    try {
-                        const parsedResponse = JSON.parse(data.response);
-                        imageData = parsedResponse.image;
-                    } catch (e) {
-                        console.error('Failed to parse response JSON:', e);
-                    }
-                } else if (data.response.image) {
-                    imageData = data.response.image;
-                }
-                
-                if (imageData) {
-                    displayImage(imageData);
-                    return;
-                }
-            }
-            
-            // Try to parse string response if it's JSON
-            if (typeof data.response === 'string') {
-                try {
-                    const parsedResponse = JSON.parse(data.response);
-                    
-                    if (parsedResponse.output && parsedResponse.output.outputs && parsedResponse.output.outputs.length > 0) {
-                        const imageUrl = parsedResponse.output.outputs[0];
-                        console.log('Found image URL in parsed response:', imageUrl);
-                        displayImageFromUrl(imageUrl);
-                        return;
-                    }
-                } catch (e) {
-                    console.error('Error parsing response JSON:', e);
-                }
-            }
-        }
-        
-        // Additional fallback: check if the entire data object has outputs we can use
-        if (data.original_response && data.original_response.output && 
-            data.original_response.output.outputs && 
-            data.original_response.output.outputs.length > 0) {
-            const imageUrl = data.original_response.output.outputs[0];
-            console.log('Found image URL in original_response:', imageUrl);
-            displayImageFromUrl(imageUrl);
+            // Display the image
+            displayImage(imageData);
             return;
         }
         
-        // Final fallback: just look for the pattern in any string properties
-        for (const key in data) {
-            if (typeof data[key] === 'string' && data[key].includes('"outputs":["https://')) {
-                try {
-                    const match = data[key].match(/"outputs":\["(https:\/\/[^"]+)"/);
-                    if (match && match[1]) {
-                        console.log('Found image URL in string property:', match[1]);
-                        displayImageFromUrl(match[1]);
-                        return;
-                    }
-                } catch (e) {
-                    console.error('Error extracting URL from string:', e);
-                }
-            }
+        // Fallback to the old structure if needed
+        if (data.original_response && 
+            data.original_response.output && 
+            data.original_response.output.outputs) {
+            
+            // Get the base64 image data
+            const imageData = data.original_response.output.outputs;
+            console.log('Found base64 image in original_response.output.outputs');
+            
+            // Display the image
+            displayImage(imageData);
+            return;
         }
         
-        console.warn('Could not find any image URL in the message:', data);
+        console.warn('Could not find image data at expected locations', data);
     } catch (error) {
         console.error('Error processing message:', error);
     }
 }
 
-// Get a random cell index for placing the new image
+// Get a cell index for placing the new image, prioritizing empty cells
 function getRandomCellIndex() {
-    return Math.floor(Math.random() * config.gridSize);
+    // Check if all cells are used
+    const allCellsUsed = state.usedCells.every(used => used === true);
+    
+    if (!allCellsUsed) {
+        // Get all empty cell indices
+        const emptyCells = state.usedCells.map((used, index) => !used ? index : -1).filter(index => index !== -1);
+        
+        // Pick a random empty cell
+        const randomEmptyCellIndex = Math.floor(Math.random() * emptyCells.length);
+        return emptyCells[randomEmptyCellIndex];
+    } else {
+        // All cells are used, just pick a random one to replace
+        return Math.floor(Math.random() * config.gridSize);
+    }
 }
 
 // Display an image from a URL
@@ -194,6 +157,11 @@ function displayImageFromUrl(imageUrl) {
             cell.innerHTML = '';
             cell.appendChild(container);
             
+            // Mark this cell as used
+            const cellId = cell.id;
+            const cellIndex = parseInt(cellId.replace('cell-', ''), 10);
+            state.usedCells[cellIndex] = true;
+            
             // Update state
             state.totalImagesReceived++;
             updateUI();
@@ -211,6 +179,11 @@ function displayImageFromUrl(imageUrl) {
                     </a>
                 </div>
             `;
+            
+            // Mark this cell as used
+            const cellId = cell.id;
+            const cellIndex = parseInt(cellId.replace('cell-', ''), 10);
+            state.usedCells[cellIndex] = true;
             
             state.totalImagesReceived++;
             updateUI();
@@ -248,12 +221,23 @@ function displayImage(imageData) {
             img.classList.add('image-loaded');
             cell.appendChild(img);
             
+            // Mark this cell as used
+            const cellId = cell.id;
+            const cellIndex = parseInt(cellId.replace('cell-', ''), 10);
+            state.usedCells[cellIndex] = true;
+            
             state.totalImagesReceived++;
             updateUI();
         };
         
         img.onerror = function() {
             cell.innerHTML = '<div class="error-image">Failed to load image</div>';
+            
+            // Mark this cell as used
+            const cellId = cell.id;
+            const cellIndex = parseInt(cellId.replace('cell-', ''), 10);
+            state.usedCells[cellIndex] = true;
+            
             state.totalImagesReceived++;
             updateUI();
         };
