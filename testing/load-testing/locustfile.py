@@ -98,9 +98,13 @@ class CeleryTaskUser(HttpUser):
         """Submit a flux task to test the inference-balancer"""
         payload = {
             "input": {
-                "prompt": random.choice(self.prompts)
+                "prompt": random.choice(self.prompts),
+                "enable_base64_output": True,
+                "cache_threshold": 0.1,
+                "size": "1024*1024"
             }
         }
+
         response = self.client.post("/flux", json=payload)
         
         if response.status_code == 200:

@@ -28,14 +28,14 @@ def flux(self):
         )
         status_code = response.status_code
         response_text = response.text
-        logger.info(f"Task ID: {self.request.id} - Got response: {status_code}, content: {response_text}")
+        logger.info(f"Task ID: {self.request.id} - Got response: {status_code}")
         return {"status_code": status_code, "response": response_text}
     except Exception as e:
         logger.error(f"Task ID: {self.request.id} - Error calling inference-balancer: {str(e)}")
         return {"error": str(e)}
 
 @app.task(bind=True, name='tasks.webhook_flux', queue='default')
-def webhook_flux(self, webhook_url=None, prompt=None, seed=None):
+def webhook_flux(self, webhook_url=None, prompt=None, seed=None, enable_base64_output=None, cache_threshold=None, size=None):
     """
     Task that makes a request to the inference-balancer endpoint 
     and forwards the response to a webhook endpoint.
@@ -45,6 +45,9 @@ def webhook_flux(self, webhook_url=None, prompt=None, seed=None):
                     Defaults to webhook.webhook.svc.cluster.local/publish-response
         prompt: The prompt text to send to the inference-balancer
         seed: The seed value to use for the inference
+        enable_base64_output: Whether to return base64 encoded image
+        cache_threshold: Threshold for caching
+        size: Size of the generated image
     """
     # Use default webhook URL if none provided
     if webhook_url is None:
@@ -58,6 +61,12 @@ def webhook_flux(self, webhook_url=None, prompt=None, seed=None):
             payload["prompt"] = prompt
         if seed is not None:
             payload["seed"] = seed
+        if enable_base64_output is not None:
+            payload["enable_base64_output"] = enable_base64_output
+        if cache_threshold is not None:
+            payload["cache_threshold"] = cache_threshold
+        if size is not None:
+            payload["size"] = size
             
         # Special handling for input.prompt format required by DataCrunch API
         datacrunch_payload = {}
@@ -67,8 +76,15 @@ def webhook_flux(self, webhook_url=None, prompt=None, seed=None):
                     "prompt": payload["prompt"]
                 }
             }
+
             if "seed" in payload:
                 datacrunch_payload["input"]["seed"] = payload["seed"]
+            if "enable_base64_output" in payload:
+                datacrunch_payload["input"]["enable_base64_output"] = payload["enable_base64_output"]
+            if "cache_threshold" in payload:
+                datacrunch_payload["input"]["cache_threshold"] = payload["cache_threshold"]
+            if "size" in payload:
+                datacrunch_payload["input"]["size"] = payload["size"]
         
         # Call the inference balancer
         if payload:
@@ -83,7 +99,7 @@ def webhook_flux(self, webhook_url=None, prompt=None, seed=None):
             
         status_code = response.status_code
         response_text = response.text
-        logger.info(f"Task ID: {self.request.id} - Got response: {status_code}, content: {response_text}")
+        logger.info(f"Task ID: {self.request.id} - Got response: {status_code}")
         
         # Prepare the payload for the webhook
         webhook_payload = {
@@ -97,6 +113,12 @@ def webhook_flux(self, webhook_url=None, prompt=None, seed=None):
             webhook_payload["prompt"] = prompt
         if seed is not None:
             webhook_payload["seed"] = seed
+        if enable_base64_output is not None:
+            webhook_payload["enable_base64_output"] = enable_base64_output
+        if cache_threshold is not None:
+            webhook_payload["cache_threshold"] = cache_threshold
+        if size is not None:
+            webhook_payload["size"] = size
         
         # Send the response to the webhook endpoint
         webhook_response = requests.post(
@@ -117,7 +139,7 @@ def webhook_flux(self, webhook_url=None, prompt=None, seed=None):
         return {"error": str(e)}
 
 @app.task(bind=True, name='tasks.websocket_flux', queue='default')
-def websocket_flux(self, websocket_url=None, prompt=None, seed=None):
+def websocket_flux(self, websocket_url=None, prompt=None, seed=None, enable_base64_output=None, cache_threshold=None, size=None):
     """
     Task that makes a request to the inference-balancer endpoint 
     and forwards the response to a websocket endpoint.
@@ -127,6 +149,9 @@ def websocket_flux(self, websocket_url=None, prompt=None, seed=None):
                       Defaults to visualize-websocket.frontend.svc.cluster.local/publish
         prompt: The prompt text to send to the inference-balancer
         seed: The seed value to use for the inference
+        enable_base64_output: Whether to return base64 encoded image
+        cache_threshold: Threshold for caching
+        size: Size of the generated image
     """
     # Use default websocket URL if none provided
     if websocket_url is None:
@@ -140,6 +165,12 @@ def websocket_flux(self, websocket_url=None, prompt=None, seed=None):
             payload["prompt"] = prompt
         if seed is not None:
             payload["seed"] = seed
+        if enable_base64_output is not None:
+            payload["enable_base64_output"] = enable_base64_output
+        if cache_threshold is not None:
+            payload["cache_threshold"] = cache_threshold
+        if size is not None:
+            payload["size"] = size
             
         # Special handling for input.prompt format required by DataCrunch API
         datacrunch_payload = {}
@@ -151,6 +182,12 @@ def websocket_flux(self, websocket_url=None, prompt=None, seed=None):
             }
             if "seed" in payload:
                 datacrunch_payload["input"]["seed"] = payload["seed"]
+            if "enable_base64_output" in payload:
+                datacrunch_payload["input"]["enable_base64_output"] = payload["enable_base64_output"]
+            if "cache_threshold" in payload:
+                datacrunch_payload["input"]["cache_threshold"] = payload["cache_threshold"]
+            if "size" in payload:
+                datacrunch_payload["input"]["size"] = payload["size"]
         
         # Call the inference balancer
         if payload:
@@ -165,7 +202,7 @@ def websocket_flux(self, websocket_url=None, prompt=None, seed=None):
             
         status_code = response.status_code
         response_text = response.text
-        logger.info(f"Task ID: {self.request.id} - Got response: {status_code}, content: {response_text}")
+        logger.info(f"Task ID: {self.request.id} - Got response: {status_code}")
         
         # Parse the DataCrunch API response to extract the image URL
         try:
@@ -205,6 +242,12 @@ def websocket_flux(self, websocket_url=None, prompt=None, seed=None):
             websocket_payload["prompt"] = prompt
         if seed is not None:
             websocket_payload["seed"] = seed
+        if enable_base64_output is not None:
+            websocket_payload["enable_base64_output"] = enable_base64_output
+        if cache_threshold is not None:
+            websocket_payload["cache_threshold"] = cache_threshold
+        if size is not None:
+            websocket_payload["size"] = size
         
         # Send the response to the websocket endpoint
         logger.info(f"Task ID: {self.request.id} - Sending to WebSocket: {websocket_url}")
