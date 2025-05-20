@@ -1328,7 +1328,7 @@ dashboards:
                     "type": "prometheus",
                     "uid": "Prometheus"
                   },
-                  "expr": "sum(rate(istio_requests_total{destination_workload=~\"inference-balancer-proxy-a|inference-balancer-proxy-b\"}[5m]))",
+                  "expr": "sum(rate(istio_requests_total{destination_workload=~\"inference-balancer-proxy-a|inference-balancer-proxy-b\"}[1m]))",
                   "legendFormat": "Total RPS"
                 }
               ]
@@ -1532,7 +1532,7 @@ dashboards:
                     "type": "prometheus",
                     "uid": "Prometheus"
                   },
-                  "expr": "sum(rate(istio_requests_total{destination_workload=\"inference-balancer-proxy-a\"}[5m]))",
+                  "expr": "sum(rate(istio_requests_total{destination_workload=\"inference-balancer-proxy-a\"}[1m]))",
                   "legendFormat": "Proxy A RPS"
                 },
                 {
@@ -1540,7 +1540,7 @@ dashboards:
                     "type": "prometheus",
                     "uid": "Prometheus"
                   },
-                  "expr": "sum(rate(istio_requests_total{destination_workload=\"inference-balancer-proxy-b\"}[5m]))",
+                  "expr": "sum(rate(istio_requests_total{destination_workload=\"inference-balancer-proxy-b\"}[1m]))",
                   "legendFormat": "Proxy B RPS"
                 }
               ]
@@ -1628,7 +1628,7 @@ dashboards:
                     "type": "prometheus",
                     "uid": "Prometheus"
                   },
-                  "expr": "sum(istio_requests_total{destination_workload=\"inference-balancer-proxy-a\"})",
+                  "expr": "sum(rate(istio_requests_total{destination_workload=\"inference-balancer-proxy-a\"}[1m]))",
                   "legendFormat": "Proxy A Total Requests"
                 },
                 {
@@ -1636,7 +1636,7 @@ dashboards:
                     "type": "prometheus",
                     "uid": "Prometheus"
                   },
-                  "expr": "sum(istio_requests_total{destination_workload=\"inference-balancer-proxy-b\"})",
+                  "expr": "sum(rate(istio_requests_total{destination_workload=\"inference-balancer-proxy-b\"}[1m]))",
                   "legendFormat": "Proxy B Total Requests"
                 }
               ]

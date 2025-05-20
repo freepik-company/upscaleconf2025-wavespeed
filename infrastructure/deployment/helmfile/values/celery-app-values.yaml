@@ -47,7 +47,7 @@ celery:
           metadata:
             serverAddress: http://prometheus-server.monitoring.svc.cluster.local:80
             threshold: "1"
-            query: ceil(sum(celery_worker_tasks_active{hostname=~".*app-default-worker.*"})/15)
+            query: ceil(sum(celery_worker_tasks_active{hostname=~".*app-default-worker.*"})/3)
     
   flower:
     enabled: true

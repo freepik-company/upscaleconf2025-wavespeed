@@ -20,7 +20,7 @@ if __name__ == '__main__':
     argv = [
         'worker',
         '--loglevel=INFO',
-        '--concurrency=15',  # Adjust based on your needs
+        '--concurrency=3',  # Adjust based on your needs
         '-Q', 'default',    # Queue name
     ]
     app.worker_main(argv) 
